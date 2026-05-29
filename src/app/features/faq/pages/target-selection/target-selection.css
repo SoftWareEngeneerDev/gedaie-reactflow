@@ -1,0 +1,116 @@
+.page {
+  min-height: 100vh;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* En-tête */
+.page-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1E293B;
+  margin: 0 0 12px;
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  color: #64748B;
+  margin: 0;
+}
+
+/* Grille */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Carte */
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+  background: #FFFFFF;
+  border: 2px solid #E2E8F0;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  position: relative;
+}
+
+.card:hover {
+  border-color: #3B82F6;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+  transform: translateY(-4px);
+}
+
+.card-icon {
+  font-size: 2.5rem;
+}
+
+.card-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.card-desc {
+  font-size: 0.8rem;
+  color: #94A3B8;
+  line-height: 1.4;
+}
+
+.card-arrow {
+  font-size: 1.2rem;
+  color: #3B82F6;
+  font-weight: 700;
+  transition: transform 0.2s;
+}
+
+.card:hover .card-arrow {
+  transform: translateX(4px);
+}
+
+/* États */
+.loading, .error-box, .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px;
+  color: #64748B;
+  font-size: 1rem;
+}
+
+.error-box {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 12px;
+  color: #991B1B;
+  max-width: 400px;
+  text-align: center;
+}
+
+.spinner {
+  font-size: 2rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

@@ -1,0 +1,148 @@
+.page {
+  min-height: 100vh;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: #94A3B8;
+  margin-bottom: 12px;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1E293B;
+  margin: 0 0 10px;
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  color: #64748B;
+  margin: 0;
+}
+
+/* Bouton retour */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #64748B;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #F1F5F9;
+  color: #1E293B;
+}
+
+/* Liste incidents */
+.incidents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.incident-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: #FFFFFF;
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.incident-card:hover {
+  border-color: #F97316;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.12);
+  transform: translateX(4px);
+}
+
+.incident-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.incident-icon {
+  font-size: 1.5rem;
+}
+
+.incident-name {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.incident-desc {
+  display: block;
+  font-size: 0.8rem;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+.incident-arrow {
+  font-size: 1.2rem;
+  color: #F97316;
+  font-weight: 700;
+  transition: transform 0.2s;
+}
+
+.incident-card:hover .incident-arrow {
+  transform: translateX(4px);
+}
+
+/* États */
+.loading, .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px;
+  color: #64748B;
+}
+
+.error-box {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 12px;
+  color: #991B1B;
+  padding: 24px;
+  text-align: center;
+}
+
+.spinner {
+  font-size: 2rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

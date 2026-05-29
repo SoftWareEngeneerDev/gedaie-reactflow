@@ -1,0 +1,48 @@
+<div class="page">
+
+  <!-- En-tête -->
+  <header class="page-header">
+    <h1 class="page-title">🛠️ FAQ Support</h1>
+    <p class="page-subtitle">Sur quel équipement ou produit avez-vous un problème ?</p>
+  </header>
+
+  <!-- Chargement -->
+  @if (loading()) {
+    <div class="loading">
+      <span class="spinner">⏳</span>
+      <p>Chargement des équipements...</p>
+    </div>
+  }
+
+  <!-- Erreur -->
+  @if (error()) {
+    <div class="error-box">
+      <span>❌</span>
+      <p>{{ error() }}</p>
+      <small>Vérifiez que Strapi est démarré sur localhost:1337</small>
+    </div>
+  }
+
+  <!-- Grille des targets -->
+  @if (!loading() && !error()) {
+    @if (targets().length === 0) {
+      <div class="empty">
+        <p>Aucun équipement disponible pour le moment.</p>
+      </div>
+    } @else {
+      <div class="cards-grid">
+        @for (target of targets(); track target.documentId) {
+          <button class="card" (click)="selectTarget(target)">
+            <span class="card-icon">{{ getIcon(target.name) }}</span>
+            <span class="card-name">{{ target.name }}</span>
+            @if (target.description) {
+              <span class="card-desc">{{ target.description }}</span>
+            }
+            <span class="card-arrow">→</span>
+          </button>
+        }
+      </div>
+    }
+  }
+
+</div>

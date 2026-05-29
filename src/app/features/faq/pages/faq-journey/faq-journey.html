@@ -1,0 +1,162 @@
+<div class="page">
+
+  <!-- Barre de navigation -->
+  <header class="nav-bar">
+    <button class="back-btn" (click)="goBack()">← Retour</button>
+    <div class="breadcrumb">
+      🛠️ {{ targetName() }} &nbsp;›&nbsp; {{ incidentName() }}
+    </div>
+    <button class="home-btn" (click)="goHome()">🏠 Accueil</button>
+  </header>
+
+  <!-- Barre de progression -->
+  @if (!loading() && !error() && history().length > 0) {
+    <div class="progress-bar">
+      <div class="progress-dots">
+        @for (step of history(); track $index) {
+          <span class="dot done">●</span>
+        }
+        <span class="dot current">●</span>
+      </div>
+      <span class="progress-label">Étape {{ history().length + 1 }}</span>
+    </div>
+  }
+
+  <!-- Chargement -->
+  @if (loading()) {
+    <div class="center-box">
+      <span class="spinner">⏳</span>
+      <p>Chargement du parcours...</p>
+    </div>
+  }
+
+  <!-- Erreur -->
+  @if (error()) {
+    <div class="center-box">
+      <div class="error-box">
+        <span>❌</span>
+        <p>{{ error() }}</p>
+        <button class="btn-primary" (click)="goHome()">Retour à l'accueil</button>
+      </div>
+    </div>
+  }
+
+  <!-- Contenu du nœud courant -->
+  @if (!loading() && !error() && currentNode()) {
+
+    <div class="node-container">
+
+      <!-- ── QUESTION ─────────────────────────────────────────────────── -->
+      @if (currentNode()!.type === 'question') {
+        <div class="card card--question">
+          <div class="card-badge badge--question">❓ Question</div>
+          <h2 class="card-title">
+            {{ asQuestion(currentNode()!.content).question }}
+          </h2>
+          <div class="options-grid">
+            @for (opt of asQuestion(currentNode()!.content).options; track opt.label) {
+              <button class="option-btn" (click)="answer(opt.label)">
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ── SOLUTION ─────────────────────────────────────────────────── -->
+      @if (currentNode()!.type === 'solution') {
+        <div class="card card--solution">
+          <div class="card-badge badge--solution">✅ Solution trouvée</div>
+          <h2 class="card-title">
+            {{ asSolution(currentNode()!.content).title }}
+          </h2>
+          <p class="card-message">
+            {{ asSolution(currentNode()!.content).message }}
+          </p>
+
+          @if (asSolution(currentNode()!.content).steps?.length) {
+            <ol class="steps-list">
+              @for (step of asSolution(currentNode()!.content).steps!; track $index) {
+                <li class="step-item">{{ step }}</li>
+              }
+            </ol>
+          }
+
+          <div class="solution-actions">
+            <button class="btn-success" (click)="next()">
+              ✅ Problème résolu !
+            </button>
+            <button class="btn-outline" (click)="goBack()">
+              ↩ Ça ne fonctionne pas
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── TICKET ───────────────────────────────────────────────────── -->
+      @if (currentNode()!.type === 'ticket') {
+        <div class="card card--ticket">
+          <div class="card-badge badge--ticket">🎫 Création de ticket</div>
+
+          @if (!ticketSent()) {
+            <h2 class="card-title">
+              {{ asTicket(currentNode()!.content).message }}
+            </h2>
+
+            <div class="ticket-meta">
+              <span class="priority-badge priority--{{ asTicket(currentNode()!.content).priority ?? 'medium' }}">
+                Priorité : {{ asTicket(currentNode()!.content).priority ?? 'medium' }}
+              </span>
+              @if (asTicket(currentNode()!.content).category) {
+                <span class="category-badge">
+                  {{ asTicket(currentNode()!.content).category }}
+                </span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Décrivez votre problème (optionnel)</label>
+              <textarea
+                class="form-textarea"
+                [value]="ticketComment()"
+                (input)="ticketComment.set($any($event.target).value)"
+                placeholder="Ajoutez des informations complémentaires..."
+                rows="4">
+              </textarea>
+            </div>
+
+            <button class="btn-primary" (click)="submitTicket()">
+              🎫 Créer le ticket
+            </button>
+          } @else {
+            <div class="ticket-success">
+              <span class="success-icon">🎉</span>
+              <h2>Ticket créé avec succès !</h2>
+              <p>Notre équipe support va prendre en charge votre demande.</p>
+              <button class="btn-outline" (click)="restart()">
+                🔄 Nouveau parcours
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── END ─────────────────────────────────────────────────────── -->
+      @if (currentNode()!.type === 'end') {
+        <div class="card card--end">
+          <div class="end-icon">🏁</div>
+          <h2 class="card-title">
+            {{ asEnd(currentNode()!.content).message }}
+          </h2>
+          <p class="card-message">Nous espérons avoir pu vous aider.</p>
+          <div class="solution-actions">
+            <button class="btn-primary" (click)="goHome()">🏠 Retour à l'accueil</button>
+            <button class="btn-outline" (click)="restart()">🔄 Nouveau parcours</button>
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+
+</div>

@@ -1,0 +1,319 @@
+.page {
+  min-height: 100vh;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Inter', -apple-system, sans-serif;
+  padding-bottom: 48px;
+}
+
+/* Barre nav */
+.nav-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.back-btn, .home-btn {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #64748B;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.back-btn:hover, .home-btn:hover {
+  background: #F1F5F9;
+  color: #1E293B;
+}
+
+/* Barre de progression */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #EFF6FF;
+  width: 100%;
+  border-bottom: 1px solid #DBEAFE;
+}
+
+.progress-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  font-size: 10px;
+}
+.dot.done    { color: #22C55E; }
+.dot.current { color: #3B82F6; }
+
+.progress-label {
+  font-size: 0.8rem;
+  color: #1D4ED8;
+  font-weight: 600;
+}
+
+/* Conteneur principal */
+.node-container {
+  width: 100%;
+  max-width: 580px;
+  padding: 40px 24px 0;
+}
+
+/* Carte générique */
+.card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Badges */
+.card-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.badge--question { background: #DBEAFE; color: #1D4ED8; }
+.badge--solution { background: #DCFCE7; color: #15803D; }
+.badge--ticket   { background: #FEF3C7; color: #B45309; }
+
+/* Titre et message */
+.card-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+
+.card-message {
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+/* Options question */
+.options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.option-btn {
+  padding: 14px 20px;
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1E293B;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.option-btn:hover {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  transform: translateX(4px);
+}
+
+/* Étapes solution */
+.steps-list {
+  background: #F0FDF4;
+  border-radius: 12px;
+  padding: 16px 16px 16px 32px;
+  margin: 0 0 20px;
+}
+
+.step-item {
+  color: #166534;
+  font-size: 0.9rem;
+  padding: 4px 0;
+  line-height: 1.5;
+}
+
+/* Actions */
+.solution-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Boutons */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: #3B82F6;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover  { background: #2563EB; }
+
+.btn-success {
+  width: 100%;
+  padding: 14px;
+  background: #22C55E;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-success:hover  { background: #16A34A; }
+
+.btn-outline {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: #64748B;
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-outline:hover  { background: #F1F5F9; color: #1E293B; }
+
+/* Ticket */
+.ticket-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.priority-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.priority--low    { background: #FEF9C3; color: #854D0E; }
+.priority--medium { background: #FEF3C7; color: #B45309; }
+.priority--high   { background: #FEE2E2; color: #991B1B; }
+
+.category-badge {
+  padding: 4px 12px;
+  background: #F1F5F9;
+  color: #64748B;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.form-group { margin-bottom: 20px; }
+
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #1E293B;
+  background: #F8FAFC;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+.form-textarea:focus { border-color: #3B82F6; }
+
+/* Ticket succès */
+.ticket-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+.success-icon { font-size: 3rem; }
+
+/* End */
+.card--end {
+  text-align: center;
+}
+.end-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+/* States */
+.center-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 48px 24px;
+  gap: 16px;
+}
+
+.error-box {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  color: #991B1B;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.spinner {
+  font-size: 2rem;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

@@ -1,0 +1,54 @@
+<div class="page">
+
+  <!-- En-tête -->
+  <header class="page-header">
+    <button class="back-btn" (click)="goBack()">← Retour</button>
+    <div class="breadcrumb">🛠️ FAQ Support &nbsp;›&nbsp; {{ targetName() }}</div>
+    <h1 class="page-title">Quel est votre problème ?</h1>
+    <p class="page-subtitle">Sélectionnez le type d'incident sur <strong>{{ targetName() }}</strong></p>
+  </header>
+
+  <!-- Chargement -->
+  @if (loading()) {
+    <div class="loading">
+      <span class="spinner">⏳</span>
+      <p>Chargement des incidents...</p>
+    </div>
+  }
+
+  <!-- Erreur -->
+  @if (error()) {
+    <div class="error-box">
+      <span>❌</span>
+      <p>{{ error() }}</p>
+    </div>
+  }
+
+  <!-- Liste des incidents -->
+  @if (!loading() && !error()) {
+    @if (incidents().length === 0) {
+      <div class="empty">
+        <p>Aucun incident disponible pour cet équipement.</p>
+        <button class="back-btn" (click)="goBack()">← Retour</button>
+      </div>
+    } @else {
+      <div class="incidents-list">
+        @for (incident of incidents(); track incident.documentId) {
+          <button class="incident-card" (click)="selectIncident(incident)">
+            <div class="incident-info">
+              <span class="incident-icon">⚠️</span>
+              <div>
+                <span class="incident-name">{{ incident.name }}</span>
+                @if (incident.description) {
+                  <span class="incident-desc">{{ incident.description }}</span>
+                }
+              </div>
+            </div>
+            <span class="incident-arrow">→</span>
+          </button>
+        }
+      </div>
+    }
+  }
+
+</div>
