@@ -1,5 +1,5 @@
 import React from 'react';
-import { Node } from '@xyflow/react';
+import { Node, Edge } from '@xyflow/react';
 
 // ── Interfaces de données par type de nœud ────────────────────────────────
 interface QuestionData {
@@ -21,9 +21,12 @@ interface EndData {
 }
 
 interface Props {
-  node:     Node | null;
-  onChange: (nodeId: string, newData: Record<string, unknown>) => void;
-  onDelete: (nodeId: string) => void;
+  node:            Node | null;
+  edge:            Edge | null;          // arête sélectionnée
+  onChange:        (nodeId: string, newData: Record<string, unknown>) => void;
+  onDelete:        (nodeId: string) => void;
+  onEdgeLabelChange: (edgeId: string, label: string) => void;
+  onEdgeDelete:    (edgeId: string) => void;
 }
 
 // ── Styles réutilisables ──────────────────────────────────────────────────
@@ -239,112 +242,143 @@ const NODE_META: Record<string, { emoji: string; label: string; color: string; b
 };
 
 // ── Panneau principal ─────────────────────────────────────────────────────
-export default function NodeConfigPanel({ node, onChange, onDelete }: Props) {
-  // Panneau vide si aucun nœud sélectionné
-  if (!node) {
+export default function NodeConfigPanel({
+  node, edge, onChange, onDelete, onEdgeLabelChange, onEdgeDelete,
+}: Props) {
+
+  const asideBase: React.CSSProperties = {
+    width:       '240px',
+    minWidth:    '240px',
+    background:  '#FFFFFF',
+    borderLeft:  '1px solid #E2E8F0',
+    display:     'flex',
+    flexDirection: 'column',
+    boxShadow:   '-2px 0 8px rgba(0,0,0,0.05)',
+    overflowY:   'auto',
+  };
+
+  // ── Panneau vide ────────────────────────────────────────────────────────
+  if (!node && !edge) {
     return (
-      <aside style={{
-        width: '240px',
-        minWidth: '240px',
-        background: '#FFFFFF',
-        borderLeft: '1px solid #E2E8F0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        gap: '8px',
-        color: '#CBD5E1',
-        fontSize: '13px',
-        textAlign: 'center',
-        padding: '24px',
-      }}>
+      <aside style={{ ...asideBase, alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#CBD5E1', fontSize: '13px', textAlign: 'center', padding: '24px' }}>
         <span style={{ fontSize: '32px' }}>👈</span>
-        <p style={{ margin: 0 }}>Clique sur un nœud pour modifier ses propriétés</p>
+        <p style={{ margin: 0 }}>Clique sur un nœud<br/>ou une flèche</p>
       </aside>
     );
   }
 
-  const meta  = NODE_META[node.type ?? ''] ?? { emoji: '⬜', label: 'Nœud', color: '#475569', bg: '#F8FAFC' };
-  const update = (newData: Record<string, unknown>) => onChange(node.id, newData);
+  // ── Panneau Arête ────────────────────────────────────────────────────────
+  if (edge && !node) {
+    const currentLabel = typeof edge.label === 'string' ? edge.label : '';
+
+    return (
+      <aside style={asideBase}>
+        {/* En-tête */}
+        <div style={{ padding: '16px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '22px' }}>↔️</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: '#475569' }}>Connexion</div>
+            <div style={{ fontSize: '10px', color: '#94A3B8', fontFamily: 'monospace' }}>{edge.id}</div>
+          </div>
+        </div>
+
+        {/* Corps */}
+        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Source → Cible */}
+          <div>
+            <label style={labelStyle}>Trajet</label>
+            <div style={{ fontSize: '12px', color: '#475569', background: '#F8FAFC', padding: '8px 10px', borderRadius: '8px', fontFamily: 'monospace' }}>
+              {edge.source}<br/>
+              <span style={{ color: '#94A3B8' }}>↓</span><br/>
+              {edge.target}
+            </div>
+          </div>
+
+          {/* Label (= l'option qui déclenche cette flèche) */}
+          <div>
+            <label style={labelStyle}>Label de l'option</label>
+            <input
+              style={{ ...inputStyle, borderColor: currentLabel ? '#3B82F6' : '#FCA5A5' }}
+              value={currentLabel}
+              placeholder="Ex: Oui, Non, Éteintes..."
+              onChange={(e) => onEdgeLabelChange(edge.id, e.target.value)}
+            />
+            {!currentLabel && (
+              <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#EF4444' }}>
+                ⚠️ Sans label, le FAQ ne peut pas naviguer via cette flèche.
+              </p>
+            )}
+            {currentLabel && (
+              <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#15803D' }}>
+                ✅ La réponse «{currentLabel}» mène ici.
+              </p>
+            )}
+          </div>
+
+        </div>
+
+        {/* Bouton supprimer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid #FEE2E2' }}>
+          <button
+            onClick={() => onEdgeDelete(edge.id)}
+            style={{ width: '100%', padding: '9px 0', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          >
+            🗑️ Supprimer cette flèche
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  // ── Panneau Nœud ─────────────────────────────────────────────────────────
+  const meta   = NODE_META[node!.type ?? ''] ?? { emoji: '⬜', label: 'Nœud', color: '#475569', bg: '#F8FAFC' };
+  const update = (newData: Record<string, unknown>) => onChange(node!.id, newData);
 
   return (
-    <aside style={{
-      width: '240px',
-      minWidth: '240px',
-      background: '#FFFFFF',
-      borderLeft: '1px solid #E2E8F0',
-      display: 'flex',
-      flexDirection: 'column',
-      boxShadow: '-2px 0 8px rgba(0,0,0,0.05)',
-      overflowY: 'auto',
-    }}>
+    <aside style={asideBase}>
       {/* En-tête du panneau */}
-      <div style={{
-        padding: '16px',
-        background: meta.bg,
-        borderBottom: '1px solid #E2E8F0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-      }}>
+      <div style={{ padding: '16px', background: meta.bg, borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span style={{ fontSize: '22px' }}>{meta.emoji}</span>
         <div>
-          <div style={{ fontWeight: 700, fontSize: '14px', color: meta.color }}>
-            {meta.label}
-          </div>
-          <div style={{ fontSize: '10px', color: '#94A3B8', fontFamily: 'monospace' }}>
-            {node.id}
-          </div>
+          <div style={{ fontWeight: 700, fontSize: '14px', color: meta.color }}>{meta.label}</div>
+          <div style={{ fontSize: '10px', color: '#94A3B8', fontFamily: 'monospace' }}>{node!.id}</div>
         </div>
       </div>
 
       {/* Formulaire selon le type */}
       <div style={{ padding: '16px', flex: 1 }}>
-        {node.type === 'question' && (
+        {node!.type === 'question' && (
           <QuestionForm
-            data={node.data as QuestionData}
+            data={node!.data as QuestionData}
             onChange={(d) => update(d as Record<string, unknown>)}
           />
         )}
-        {node.type === 'solution' && (
+        {node!.type === 'solution' && (
           <SolutionForm
-            data={node.data as SolutionData}
+            data={node!.data as SolutionData}
             onChange={(d) => update(d as Record<string, unknown>)}
           />
         )}
-        {node.type === 'ticket' && (
+        {node!.type === 'ticket' && (
           <TicketForm
-            data={node.data as TicketData}
+            data={node!.data as TicketData}
             onChange={(d) => update(d as Record<string, unknown>)}
           />
         )}
-        {node.type === 'end' && (
+        {node!.type === 'end' && (
           <EndForm
-            data={node.data as EndData}
+            data={node!.data as EndData}
             onChange={(d) => update(d as Record<string, unknown>)}
           />
         )}
       </div>
 
-      {/* Bouton supprimer — bien visible en bas du panneau */}
+      {/* Bouton supprimer */}
       <div style={{ padding: '12px 16px', borderTop: '1px solid #FEE2E2' }}>
         <button
-          onClick={() => onDelete(node.id)}
-          style={{
-            width:        '100%',
-            padding:      '9px 0',
-            background:   '#FEF2F2',
-            color:        '#DC2626',
-            border:       '1px solid #FECACA',
-            borderRadius: '8px',
-            fontSize:     '13px',
-            fontWeight:   700,
-            cursor:       'pointer',
-            display:      'flex',
-            alignItems:   'center',
-            justifyContent: 'center',
-            gap:          '6px',
-          }}
+          onClick={() => onDelete(node!.id)}
+          style={{ width: '100%', padding: '9px 0', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
         >
           🗑️ Supprimer ce nœud
         </button>

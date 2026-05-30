@@ -25,7 +25,11 @@ import EndNode      from './nodes/endNode';
 import Toolbar          from './toolbar';
 import NodeConfigPanel  from './nodeConfigPanel';
 import TopBar, { SaveStatus, TreeSummary } from './topBar';
-import { createTree, saveTree, publishTree, loadTree, listTrees } from './strapiService';
+import {
+  createTree, saveTree, publishTree, loadTree, listTrees,
+  listTargets, listIncidentTypes, createTarget, createIncidentType,
+  StrapiTarget, StrapiIncidentType,
+} from './strapiService';
 
 // ── Types de nœuds enregistrés ────────────────────────────────────────────
 const nodeTypes = {
@@ -137,50 +141,118 @@ function FlowEditor() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const { screenToFlowPosition }         = useReactFlow();
 
-  // Nœud actuellement sélectionné (panneau de config)
+  // Nœud ou arête sélectionné(e)
   const [selectedNode, setSelectedNode]  = useState<Node | null>(null);
+  const [selectedEdge, setSelectedEdge]  = useState<Edge | null>(null);
 
-  // État Strapi
+  // ── État Strapi — arbre ──────────────────────────────────────────────────
   const [treeName,    setTreeName]   = useState('');
   const [documentId,  setDocumentId] = useState('');
   const [saveStatus,  setSaveStatus] = useState<SaveStatus>('idle');
   const [savedTrees,  setSavedTrees] = useState<TreeSummary[]>([]);
   const [errorMsg,    setErrorMsg]   = useState('');
 
-  // Rafraîchir la liste des arbres depuis Strapi
+  // ── État Strapi — contexte Target / Incident ─────────────────────────────
+  const [targets,                setTargets]                = useState<StrapiTarget[]>([]);
+  const [selectedTargetId,       setSelectedTargetId]       = useState('');
+  const [incidentTypes,          setIncidentTypes]          = useState<StrapiIncidentType[]>([]);
+  const [selectedIncidentTypeId, setSelectedIncidentTypeId] = useState('');
+
+  // ── Chargement initial ───────────────────────────────────────────────────
   const refreshTrees = useCallback(() => {
     listTrees()
       .then((trees) => setSavedTrees(trees.map((t) => ({ documentId: t.documentId, name: t.name }))))
       .catch(() => {});
   }, []);
 
-  // Charger la liste des arbres au démarrage
-  React.useEffect(() => { refreshTrees(); }, [refreshTrees]);
+  const refreshTargets = useCallback(() => {
+    listTargets().then(setTargets).catch(() => {});
+  }, []);
 
-  // Connexion entre deux nœuds via drag depuis un handle
+  React.useEffect(() => {
+    refreshTrees();
+    refreshTargets();
+  }, [refreshTrees, refreshTargets]);
+
+  // ── Handlers Target / Incident ───────────────────────────────────────────
+
+  const handleTargetChange = useCallback((targetId: string) => {
+    setSelectedTargetId(targetId);
+    setSelectedIncidentTypeId('');
+    setIncidentTypes([]);
+    if (targetId) {
+      listIncidentTypes(targetId).then(setIncidentTypes).catch(() => {});
+    }
+  }, []);
+
+  const handleIncidentTypeChange = useCallback((incidentId: string) => {
+    setSelectedIncidentTypeId(incidentId);
+  }, []);
+
+  const handleCreateTarget = useCallback(async (name: string) => {
+    const target = await createTarget(name);
+    setTargets((prev) => [...prev, target]);
+    // Sélectionner automatiquement le nouveau target
+    setSelectedTargetId(target.documentId);
+    setSelectedIncidentTypeId('');
+    setIncidentTypes([]);
+  }, []);
+
+  const handleCreateIncidentType = useCallback(async (name: string) => {
+    if (!selectedTargetId) return;
+    const incident = await createIncidentType(name, selectedTargetId);
+    setIncidentTypes((prev) => [...prev, incident]);
+    // Sélectionner automatiquement le nouvel incident type
+    setSelectedIncidentTypeId(incident.documentId);
+  }, [selectedTargetId]);
+
+  // ── Connexions entre nœuds ───────────────────────────────────────────────
+  // Si la connexion part d'un handle nommé (= option d'un QuestionNode),
+  // on récupère ce nom comme label de l'arête — le FAQ viewer s'en sert
+  // pour savoir vers quel nœud naviguer quand l'utilisateur choisit cette option.
   const onConnect = useCallback(
-    (connection: Connection) =>
-      setEdges((eds) => addEdge({ ...connection, animated: true }, eds)),
+    (connection: Connection) => {
+      const label = connection.sourceHandle ?? undefined;
+      setEdges((eds) => addEdge({ ...connection, animated: true, label }, eds));
+    },
     [setEdges],
   );
 
-  // Sélectionner un nœud → ouvrir le panneau de config
+  // ── Sélection de nœud ────────────────────────────────────────────────────
   const onNodeClick: NodeMouseHandler = useCallback((_event, node) => {
     setSelectedNode(node);
+    setSelectedEdge(null);   // désélectionner l'arête si on clique un nœud
   }, []);
 
-  // Clic sur le fond → désélectionner
+  // ── Sélection d'arête ────────────────────────────────────────────────────
+  const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);   // désélectionner le nœud si on clique une arête
+  }, []);
+
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setSelectedEdge(null);
   }, []);
 
-  // Mettre à jour les données d'un nœud depuis le panneau
+  // ── Modifier le label d'une arête ────────────────────────────────────────
+  const handleEdgeLabelChange = useCallback((edgeId: string, label: string) => {
+    setEdges((eds) => eds.map((e) => e.id === edgeId ? { ...e, label } : e));
+    setSelectedEdge((prev) => prev?.id === edgeId ? { ...prev, label } : prev);
+  }, [setEdges]);
+
+  // ── Supprimer une arête ───────────────────────────────────────────────────
+  const handleEdgeDelete = useCallback((edgeId: string) => {
+    setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+    setSelectedEdge(null);
+  }, [setEdges]);
+
+  // ── Mise à jour des données d'un nœud ────────────────────────────────────
   const onNodeDataChange = useCallback(
     (nodeId: string, newData: Record<string, unknown>) => {
       setNodes((nds) =>
         nds.map((n) => n.id === nodeId ? { ...n, data: newData } : n)
       );
-      // Sync le nœud sélectionné pour que le panneau se mette à jour en live
       setSelectedNode((prev) =>
         prev?.id === nodeId ? { ...prev, data: newData } : prev
       );
@@ -188,7 +260,7 @@ function FlowEditor() {
     [setNodes],
   );
 
-  // Supprimer un nœud et toutes ses connexions
+  // ── Suppression d'un nœud ────────────────────────────────────────────────
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
@@ -198,24 +270,26 @@ function FlowEditor() {
     [setNodes, setEdges],
   );
 
-  // ── Handlers Strapi ──────────────────────────────────────────────────────
-
-  // Sauvegarder : crée l'arbre si nouveau, puis envoie nodes+edges
+  // ── Sauvegarder ──────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (!treeName.trim()) return;
     setSaveStatus('saving');
     setErrorMsg('');
     try {
       let id = documentId;
-      // Si pas encore d'ID → créer l'arbre dans Strapi
       if (!id) {
         const tree = await createTree(treeName.trim());
         id = tree.documentId;
         setDocumentId(id);
       }
-      await saveTree(id, { nodes, edges });
+      // Passer l'incidentTypeId pour lier l'arbre à son contexte
+      await saveTree(id, {
+        nodes,
+        edges,
+        incidentTypeId: selectedIncidentTypeId || undefined,
+      });
       setSaveStatus('saved');
-      refreshTrees(); // Rafraîchit le dropdown avec le nouvel arbre
+      refreshTrees();
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -224,9 +298,9 @@ function FlowEditor() {
       setSaveStatus('error');
       setTimeout(() => { setSaveStatus('idle'); setErrorMsg(''); }, 8000);
     }
-  }, [treeName, documentId, nodes, edges, refreshTrees]);
+  }, [treeName, documentId, nodes, edges, selectedIncidentTypeId, refreshTrees]);
 
-  // Charger un arbre existant depuis Strapi
+  // ── Charger un arbre existant ────────────────────────────────────────────
   const handleLoad = useCallback(async (id: string) => {
     setSaveStatus('saving');
     setErrorMsg('');
@@ -237,6 +311,21 @@ function FlowEditor() {
       setTreeName(tree.name);
       setDocumentId(tree.documentId);
       setSelectedNode(null);
+
+      // Restaurer le contexte Target / Incident Type
+      if (tree.incident_type) {
+        setSelectedIncidentTypeId(tree.incident_type.documentId);
+        const target = tree.incident_type.target;
+        if (target) {
+          setSelectedTargetId(target.documentId);
+          listIncidentTypes(target.documentId).then(setIncidentTypes).catch(() => {});
+        }
+      } else {
+        setSelectedIncidentTypeId('');
+        setSelectedTargetId('');
+        setIncidentTypes([]);
+      }
+
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
@@ -248,7 +337,7 @@ function FlowEditor() {
     }
   }, [setNodes, setEdges]);
 
-  // Publier : rend l'arbre visible côté Angular (status published)
+  // ── Publier ───────────────────────────────────────────────────────────────
   const handlePublish = useCallback(async () => {
     if (!documentId) return;
     setSaveStatus('publishing');
@@ -263,20 +352,18 @@ function FlowEditor() {
     }
   }, [documentId]);
 
-  // Autoriser le drop sur le canvas
+  // ── Drag & Drop ───────────────────────────────────────────────────────────
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  // Créer un nouveau nœud au drop
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
       const type = event.dataTransfer.getData('application/reactflow');
       if (!type) return;
 
-      // Convertit les coordonnées écran → coordonnées canvas
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -297,8 +384,7 @@ function FlowEditor() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
 
-      {/* Barre du haut — nom + save + publish */}
-      {/* Bandeau d'erreur détaillé (visible 8 s) */}
+      {/* Bandeau d'erreur */}
       {errorMsg && (
         <div style={{
           padding:    '8px 20px',
@@ -313,68 +399,80 @@ function FlowEditor() {
           ❌ {errorMsg}
         </div>
       )}
+
+      {/* Barre du haut */}
       <TopBar
         treeName={treeName}
         documentId={documentId}
         saveStatus={saveStatus}
         savedTrees={savedTrees}
+        targets={targets}
+        selectedTargetId={selectedTargetId}
+        incidentTypes={incidentTypes}
+        selectedIncidentTypeId={selectedIncidentTypeId}
         onNameChange={setTreeName}
         onSave={handleSave}
         onPublish={handlePublish}
         onLoad={handleLoad}
-        onClear={() => { setNodes([]); setEdges([]); setSelectedNode(null); }}
+        onClear={() => { setNodes([]); setEdges([]); setSelectedNode(null); setSelectedEdge(null); }}
+        onTargetChange={handleTargetChange}
+        onIncidentTypeChange={handleIncidentTypeChange}
+        onCreateTarget={handleCreateTarget}
+        onCreateIncidentType={handleCreateIncidentType}
       />
 
       {/* Corps : toolbar + canvas + config panel */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-      {/* Barre d'outils gauche */}
-      <Toolbar />
 
-      {/* Canvas React Flow */}
-      <div style={{ flex: 1, height: '100%' }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          onPaneClick={onPaneClick}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          deleteKeyCode={['Delete', 'Backspace']}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-        >
-          <Controls />
-          <MiniMap
-            nodeColor={(node) => {
-              switch (node.type) {
-                case 'question': return '#3B82F6';
-                case 'solution': return '#22C55E';
-                case 'ticket':   return '#F97316';
-                case 'end':      return '#94A3B8';
-                default:         return '#ccc';
-              }
-            }}
-          />
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-        </ReactFlow>
-      </div>
+        <Toolbar />
 
-      {/* Panneau de configuration à droite */}
-      <NodeConfigPanel
-        node={selectedNode}
-        onChange={onNodeDataChange}
-        onDelete={handleDeleteNode}
-      />
+        <div style={{ flex: 1, height: '100%' }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            onEdgeClick={onEdgeClick}
+            onPaneClick={onPaneClick}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            deleteKeyCode={['Delete', 'Backspace']}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+          >
+            <Controls />
+            <MiniMap
+              nodeColor={(node) => {
+                switch (node.type) {
+                  case 'question': return '#3B82F6';
+                  case 'solution': return '#22C55E';
+                  case 'ticket':   return '#F97316';
+                  case 'end':      return '#94A3B8';
+                  default:         return '#ccc';
+                }
+              }}
+            />
+            <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+          </ReactFlow>
+        </div>
+
+        <NodeConfigPanel
+          node={selectedNode}
+          edge={selectedEdge}
+          onChange={onNodeDataChange}
+          onDelete={handleDeleteNode}
+          onEdgeLabelChange={handleEdgeLabelChange}
+          onEdgeDelete={handleEdgeDelete}
+        />
       </div>
     </div>
   );
 }
 
-// ── Export — ReactFlowProvider requis pour useReactFlow() ─────────────────
+// ── Export ────────────────────────────────────────────────────────────────
 export default function FlowCanvasReact() {
   return (
     <ReactFlowProvider>

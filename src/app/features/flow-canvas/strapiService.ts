@@ -4,16 +4,29 @@ import { Node, Edge } from '@xyflow/react';
 const STRAPI_URL = 'http://localhost:1337';
 
 // ── Types ─────────────────────────────────────────────────────────────────
-export interface StrapiTree {
+export interface StrapiTarget {
   documentId: string;
   name:       string;
-  slug:       string;
-  version:    number;
+}
+
+export interface StrapiIncidentType {
+  documentId: string;
+  name:       string;
+  target?:    StrapiTarget;
+}
+
+export interface StrapiTree {
+  documentId:    string;
+  name:          string;
+  slug:          string;
+  version:       number;
+  incident_type?: StrapiIncidentType;
 }
 
 export interface SaveTreePayload {
-  nodes: Node[];
-  edges: Edge[];
+  nodes:           Node[];
+  edges:           Edge[];
+  incidentTypeId?: string;   // lie l'arbre à un type d'incident au moment du save
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -25,6 +38,49 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new Error(msg);
   }
   return res.json() as Promise<T>;
+}
+
+// ── API : Targets ─────────────────────────────────────────────────────────
+
+export async function listTargets(): Promise<StrapiTarget[]> {
+  const res = await fetch(
+    `${STRAPI_URL}/api/targets?sort=name:asc&pagination[pageSize]=100`,
+  );
+  const json = await handleResponse<{ data: StrapiTarget[] }>(res);
+  return json.data;
+}
+
+export async function createTarget(name: string): Promise<StrapiTarget> {
+  const res = await fetch(`${STRAPI_URL}/api/targets`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ data: { name } }),
+  });
+  const json = await handleResponse<{ data: StrapiTarget }>(res);
+  return json.data;
+}
+
+// ── API : Incident Types ──────────────────────────────────────────────────
+
+export async function listIncidentTypes(targetDocumentId: string): Promise<StrapiIncidentType[]> {
+  const res = await fetch(
+    `${STRAPI_URL}/api/incident-types?filters[target][documentId][$eq]=${targetDocumentId}&sort=name:asc&pagination[pageSize]=100`,
+  );
+  const json = await handleResponse<{ data: StrapiIncidentType[] }>(res);
+  return json.data;
+}
+
+export async function createIncidentType(
+  name:             string,
+  targetDocumentId: string,
+): Promise<StrapiIncidentType> {
+  const res = await fetch(`${STRAPI_URL}/api/incident-types`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ data: { name, target: targetDocumentId } }),
+  });
+  const json = await handleResponse<{ data: StrapiIncidentType }>(res);
+  return json.data;
 }
 
 // ── API : lister tous les arbres sauvegardés ─────────────────────────────
@@ -41,7 +97,7 @@ export async function createTree(name: string): Promise<StrapiTree> {
   const res = await fetch(`${STRAPI_URL}/api/decision-trees`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: { name, version: 1 } }),
+    body:    JSON.stringify({ data: { name, version: 1 } }),
   });
   const json = await handleResponse<{ data: StrapiTree }>(res);
   return json.data;
@@ -50,16 +106,17 @@ export async function createTree(name: string): Promise<StrapiTree> {
 // ── API : sauvegarder les nœuds et liens d'un arbre ──────────────────────
 export async function saveTree(
   documentId: string,
-  payload: SaveTreePayload,
+  payload:    SaveTreePayload,
 ): Promise<StrapiTree> {
   const res = await fetch(
     `${STRAPI_URL}/api/decision-trees/${documentId}/save-tree`,
     {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nodes: payload.nodes,
-        edges: payload.edges,
+      body:    JSON.stringify({
+        nodes:          payload.nodes,
+        edges:          payload.edges,
+        incidentTypeId: payload.incidentTypeId,  // ← transmis au contrôleur Strapi
       }),
     },
   );
@@ -74,7 +131,7 @@ export async function publishTree(documentId: string): Promise<StrapiTree> {
     {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: { publishedAt: new Date().toISOString() } }),
+      body:    JSON.stringify({ data: { publishedAt: new Date().toISOString() } }),
     },
   );
   const json = await handleResponse<{ data: StrapiTree }>(res);
@@ -82,62 +139,82 @@ export async function publishTree(documentId: string): Promise<StrapiTree> {
 }
 
 // ── API : charger un arbre existant ──────────────────────────────────────
+//
+// Strapi v5 : le populate ne remonte pas les relations oneToMany quand les
+// content-types enfants ont draftAndPublish=false et le parent =true.
+// Solution : 3 requêtes séparées (tree metadata, nodes, edges).
+//
 export async function loadTree(documentId: string): Promise<{
   tree:  StrapiTree;
   nodes: Node[];
   edges: Edge[];
 }> {
-  // Strapi v5 : utiliser populate=* (la syntaxe "field1,field2" n'est pas supportée)
-  const res = await fetch(
-    `${STRAPI_URL}/api/decision-trees/${documentId}?populate=*`,
+  // ── 1. Métadonnées de l'arbre + incident_type (avec son target) ──────────
+  // Note Strapi v5 : GET /:id?populate=... retourne 404 sur certains arbres.
+  // Workaround : passer par la liste filtrée sur documentId, qui fonctionne.
+  const treeRes = await fetch(
+    `${STRAPI_URL}/api/decision-trees` +
+    `?filters[documentId][$eq]=${documentId}` +
+    `&populate[incident_type][populate][0]=target` +
+    `&pagination[pageSize]=1`,
   );
-  const json = await handleResponse<{ data: Record<string, unknown> }>(res);
-  const raw = json.data;
-
-  console.log('[loadTree] raw response:', raw);
-
-  // ── Cas 1 : nodes/edges stockés comme champs JSON directement sur l'arbre
-  //    (si le custom endpoint save-tree met à jour des champs JSON de l'arbre)
-  if (Array.isArray(raw['nodes']) && (raw['nodes'] as unknown[]).length > 0) {
-    return {
-      tree:  raw as unknown as StrapiTree,
-      nodes: raw['nodes'] as Node[],
-      edges: (raw['edges'] as Edge[] | undefined) ?? [],
-    };
+  const treeJson = await handleResponse<{ data: Record<string, unknown>[] }>(treeRes);
+  if (!treeJson.data || treeJson.data.length === 0) {
+    throw new Error(`Arbre introuvable : ${documentId}`);
   }
+  const raw = treeJson.data[0];
 
-  // ── Cas 2 : nodes/edges stockés en relations (DecisionNode / DecisionEdge)
-  //    Strapi v5 peut renvoyer les noms en snake_case OU camelCase
+  // ── 2. Nœuds liés à cet arbre (requête directe, contourne draftAndPublish) ─
   type RawNode = {
-    nodeId: string; type: string; label?: string;
-    content?: Record<string, unknown>;
-    positionX?: number; positionY?: number;
+    nodeId:     string;
+    type:       string;
+    label?:     string;
+    content?:   Record<string, unknown>;
+    positionX?: number;
+    positionY?: number;
   };
+
+  const nodesRes = await fetch(
+    `${STRAPI_URL}/api/decision-nodes` +
+    `?filters[decision_tree][documentId][$eq]=${documentId}` +
+    `&pagination[pageSize]=500` +
+    `&sort=createdAt:asc`,
+  );
+  const nodesJson = await handleResponse<{ data: RawNode[] }>(nodesRes);
+
+  // ── 3. Arêtes liées à cet arbre ──────────────────────────────────────────
   type RawEdge = {
-    edgeId: string; source: string; target: string; label?: string;
+    edgeId:  string;
+    source:  string;
+    target:  string;
+    label?:  string;
   };
 
-  const rawNodes = (
-    (raw['decision_nodes'] ?? raw['decisionNodes'] ?? []) as RawNode[]
+  const edgesRes = await fetch(
+    `${STRAPI_URL}/api/decision-edges` +
+    `?filters[decision_tree][documentId][$eq]=${documentId}` +
+    `&pagination[pageSize]=500` +
+    `&sort=createdAt:asc`,
   );
-  const rawEdges = (
-    (raw['decision_edges'] ?? raw['decisionEdges'] ?? []) as RawEdge[]
-  );
+  const edgesJson = await handleResponse<{ data: RawEdge[] }>(edgesRes);
 
-  const nodes: Node[] = rawNodes.map((n) => ({
+  // ── 4. Conversion vers le format React Flow ───────────────────────────────
+  const nodes: Node[] = nodesJson.data.map((n) => ({
     id:       n.nodeId,
     type:     n.type,
     position: { x: n.positionX ?? 0, y: n.positionY ?? 0 },
     data:     n.content ?? { label: n.label ?? '' },
   }));
 
-  const edges: Edge[] = rawEdges.map((e) => ({
+  const edges: Edge[] = edgesJson.data.map((e) => ({
     id:       e.edgeId,
     source:   e.source,
     target:   e.target,
     label:    e.label ?? '',
     animated: true,
   }));
+
+  console.log(`[loadTree] ${documentId} → ${nodes.length} nœuds, ${edges.length} arêtes`);
 
   return { tree: raw as unknown as StrapiTree, nodes, edges };
 }
