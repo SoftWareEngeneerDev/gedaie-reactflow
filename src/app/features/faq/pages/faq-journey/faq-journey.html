@@ -2,11 +2,23 @@
 
   <!-- Barre de navigation -->
   <header class="nav-bar">
-    <button class="back-btn" (click)="goBack()">← Retour</button>
-    <div class="breadcrumb">
-      🛠️ {{ targetName() }} &nbsp;›&nbsp; {{ incidentName() }}
+    <div class="nav-bar-left">
+      <button class="nav-btn" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="nav-brand">
+        <span class="material-symbols-outlined">account_tree</span>
+        <span class="nav-title">FAQ Support</span>
+      </div>
     </div>
-    <button class="home-btn" (click)="goHome()">🏠 Accueil</button>
+    <nav class="breadcrumb">
+      <span class="breadcrumb-item">{{ targetName() }}</span>
+      <span class="material-symbols-outlined breadcrumb-sep">chevron_right</span>
+      <span class="breadcrumb-item breadcrumb-current">{{ incidentName() }}</span>
+    </nav>
+    <button class="nav-btn" (click)="goHome()">
+      <span class="material-symbols-outlined">home</span>
+    </button>
   </header>
 
   <!-- Barre de progression -->
@@ -14,9 +26,9 @@
     <div class="progress-bar">
       <div class="progress-dots">
         @for (step of history(); track $index) {
-          <span class="dot done">●</span>
+          <div class="dot dot-done"></div>
         }
-        <span class="dot current">●</span>
+        <div class="dot dot-current"></div>
       </div>
       <span class="progress-label">Étape {{ history().length + 1 }}</span>
     </div>
@@ -24,20 +36,21 @@
 
   <!-- Chargement -->
   @if (loading()) {
-    <div class="center-box">
-      <span class="spinner">⏳</span>
-      <p>Chargement du parcours...</p>
+    <div class="state-box">
+      <span class="material-symbols-outlined state-icon spin">sync</span>
+      <p>Chargement du parcours…</p>
     </div>
   }
 
   <!-- Erreur -->
   @if (error()) {
-    <div class="center-box">
-      <div class="error-box">
-        <span>❌</span>
-        <p>{{ error() }}</p>
-        <button class="btn-primary" (click)="goHome()">Retour à l'accueil</button>
-      </div>
+    <div class="state-box state-error">
+      <span class="material-symbols-outlined state-icon">error</span>
+      <p>{{ error() }}</p>
+      <button class="btn-primary" (click)="goHome()">
+        <span class="material-symbols-outlined">home</span>
+        Retour à l'accueil
+      </button>
     </div>
   }
 
@@ -48,110 +61,156 @@
 
       <!-- ── QUESTION ─────────────────────────────────────────────────── -->
       @if (currentNode()!.type === 'question') {
-        <div class="card card--question">
-          <div class="card-badge badge--question">❓ Question</div>
-          <h2 class="card-title">
-            {{ asQuestion(currentNode()!.content).question }}
-          </h2>
-          <div class="options-grid">
-            @for (opt of asQuestion(currentNode()!.content).options; track opt.label) {
-              <button class="option-btn" (click)="answer(opt.label)">
-                {{ opt.label }}
-              </button>
-            }
+        <div class="card">
+          <div class="card-header card-header--question">
+            <div class="card-header-icon">
+              <span class="material-symbols-outlined">help</span>
+            </div>
+            <span class="card-header-label">Question</span>
+          </div>
+          <div class="card-body">
+            <h2 class="card-title">
+              {{ asQuestion(currentNode()!.content).question }}
+            </h2>
+            <div class="options-list">
+              @for (opt of asQuestion(currentNode()!.content).options; track opt.label) {
+                <button class="option-btn" (click)="answer(opt.label)">
+                  <span class="option-label">{{ opt.label }}</span>
+                  <span class="material-symbols-outlined option-arrow">east</span>
+                </button>
+              }
+            </div>
           </div>
         </div>
       }
 
       <!-- ── SOLUTION ─────────────────────────────────────────────────── -->
       @if (currentNode()!.type === 'solution') {
-        <div class="card card--solution">
-          <div class="card-badge badge--solution">✅ Solution trouvée</div>
-          <h2 class="card-title">
-            {{ asSolution(currentNode()!.content).title }}
-          </h2>
-          <p class="card-message">
-            {{ asSolution(currentNode()!.content).message }}
-          </p>
+        <div class="card">
+          <div class="card-header card-header--solution">
+            <div class="card-header-icon">
+              <span class="material-symbols-outlined">check_circle</span>
+            </div>
+            <span class="card-header-label">Solution trouvée</span>
+          </div>
+          <div class="card-body">
+            <h2 class="card-title">
+              {{ asSolution(currentNode()!.content).title }}
+            </h2>
+            <p class="card-message">
+              {{ asSolution(currentNode()!.content).message }}
+            </p>
 
-          @if (asSolution(currentNode()!.content).steps?.length) {
-            <ol class="steps-list">
-              @for (step of asSolution(currentNode()!.content).steps!; track $index) {
-                <li class="step-item">{{ step }}</li>
-              }
-            </ol>
-          }
+            @if (asSolution(currentNode()!.content).steps?.length) {
+              <ol class="steps-list">
+                @for (step of asSolution(currentNode()!.content).steps!; track $index) {
+                  <li class="step-item">{{ step }}</li>
+                }
+              </ol>
+            }
 
-          <div class="solution-actions">
-            <button class="btn-success" (click)="next()">
-              ✅ Problème résolu !
-            </button>
-            <button class="btn-outline" (click)="goBack()">
-              ↩ Ça ne fonctionne pas
-            </button>
+            <div class="action-group">
+              <button class="btn-success" (click)="next()">
+                <span class="material-symbols-outlined">check_circle</span>
+                Problème résolu !
+              </button>
+              <button class="btn-outline" (click)="goBack()">
+                <span class="material-symbols-outlined">undo</span>
+                Ça ne fonctionne pas
+              </button>
+            </div>
           </div>
         </div>
       }
 
       <!-- ── TICKET ───────────────────────────────────────────────────── -->
       @if (currentNode()!.type === 'ticket') {
-        <div class="card card--ticket">
-          <div class="card-badge badge--ticket">🎫 Création de ticket</div>
+        <div class="card">
+          <div class="card-header card-header--ticket">
+            <div class="card-header-icon">
+              <span class="material-symbols-outlined">confirmation_number</span>
+            </div>
+            <span class="card-header-label">Création de ticket</span>
+          </div>
+          <div class="card-body">
 
-          @if (!ticketSent()) {
-            <h2 class="card-title">
-              {{ asTicket(currentNode()!.content).message }}
-            </h2>
+            @if (!ticketSent()) {
+              <h2 class="card-title">
+                {{ asTicket(currentNode()!.content).message }}
+              </h2>
 
-            <div class="ticket-meta">
-              <span class="priority-badge priority--{{ asTicket(currentNode()!.content).priority ?? 'medium' }}">
-                Priorité : {{ asTicket(currentNode()!.content).priority ?? 'medium' }}
-              </span>
-              @if (asTicket(currentNode()!.content).category) {
-                <span class="category-badge">
-                  {{ asTicket(currentNode()!.content).category }}
+              <div class="ticket-meta">
+                <span class="priority-badge priority--{{ asTicket(currentNode()!.content).priority ?? 'medium' }}">
+                  <span class="material-symbols-outlined">flag</span>
+                  Priorité : {{ asTicket(currentNode()!.content).priority ?? 'medium' }}
                 </span>
-              }
-            </div>
+                @if (asTicket(currentNode()!.content).category) {
+                  <span class="category-badge">
+                    <span class="material-symbols-outlined">label</span>
+                    {{ asTicket(currentNode()!.content).category }}
+                  </span>
+                }
+              </div>
 
-            <div class="form-group">
-              <label class="form-label">Décrivez votre problème (optionnel)</label>
-              <textarea
-                class="form-textarea"
-                [value]="ticketComment()"
-                (input)="ticketComment.set($any($event.target).value)"
-                placeholder="Ajoutez des informations complémentaires..."
-                rows="4">
-              </textarea>
-            </div>
+              <div class="form-group">
+                <label class="form-label">Décrivez votre problème (optionnel)</label>
+                <textarea
+                  class="form-textarea"
+                  [value]="ticketComment()"
+                  (input)="ticketComment.set($any($event.target).value)"
+                  placeholder="Ajoutez des informations complémentaires…"
+                  rows="4">
+                </textarea>
+              </div>
 
-            <button class="btn-primary" (click)="submitTicket()">
-              🎫 Créer le ticket
-            </button>
-          } @else {
-            <div class="ticket-success">
-              <span class="success-icon">🎉</span>
-              <h2>Ticket créé avec succès !</h2>
-              <p>Notre équipe support va prendre en charge votre demande.</p>
-              <button class="btn-outline" (click)="restart()">
-                🔄 Nouveau parcours
+              <button class="btn-primary" (click)="submitTicket()">
+                <span class="material-symbols-outlined">send</span>
+                Créer le ticket
               </button>
-            </div>
-          }
+            } @else {
+              <div class="ticket-success">
+                <div class="success-icon-wrap">
+                  <span class="material-symbols-outlined">celebration</span>
+                </div>
+                <h2 class="card-title">Ticket créé avec succès !</h2>
+                <p class="card-message">Notre équipe support va prendre en charge votre demande.</p>
+                <button class="btn-outline" (click)="restart()">
+                  <span class="material-symbols-outlined">refresh</span>
+                  Nouveau parcours
+                </button>
+              </div>
+            }
+          </div>
         </div>
       }
 
       <!-- ── END ─────────────────────────────────────────────────────── -->
       @if (currentNode()!.type === 'end') {
-        <div class="card card--end">
-          <div class="end-icon">🏁</div>
-          <h2 class="card-title">
-            {{ asEnd(currentNode()!.content).message }}
-          </h2>
-          <p class="card-message">Nous espérons avoir pu vous aider.</p>
-          <div class="solution-actions">
-            <button class="btn-primary" (click)="goHome()">🏠 Retour à l'accueil</button>
-            <button class="btn-outline" (click)="restart()">🔄 Nouveau parcours</button>
+        <div class="card">
+          <div class="card-header card-header--end">
+            <div class="card-header-icon">
+              <span class="material-symbols-outlined">flag</span>
+            </div>
+            <span class="card-header-label">Fin du parcours</span>
+          </div>
+          <div class="card-body card-body--centered">
+            <div class="end-icon-wrap">
+              <span class="material-symbols-outlined">check_circle</span>
+            </div>
+            <h2 class="card-title">
+              {{ asEnd(currentNode()!.content).message }}
+            </h2>
+            <p class="card-message">Nous espérons avoir pu vous aider.</p>
+            <div class="action-group">
+              <button class="btn-primary" (click)="goHome()">
+                <span class="material-symbols-outlined">home</span>
+                Retour à l'accueil
+              </button>
+              <button class="btn-outline" (click)="restart()">
+                <span class="material-symbols-outlined">refresh</span>
+                Nouveau parcours
+              </button>
+            </div>
           </div>
         </div>
       }

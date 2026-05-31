@@ -1,50 +1,75 @@
 <div class="page">
 
-  <!-- En-tête -->
-  <header class="page-header">
-    <button class="back-btn" (click)="goBack()">← Retour</button>
-    <div class="breadcrumb">🛠️ FAQ Support &nbsp;›&nbsp; {{ targetName() }}</div>
-    <h1 class="page-title">Quel est votre problème ?</h1>
-    <p class="page-subtitle">Sélectionnez le type d'incident sur <strong>{{ targetName() }}</strong></p>
+  <!-- App bar -->
+  <header class="app-bar">
+    <div class="app-bar-left">
+      <button class="back-btn" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="app-bar-brand">
+        <span class="material-symbols-outlined">account_tree</span>
+        <span class="app-bar-title">FAQ Support</span>
+      </div>
+    </div>
+    <nav class="breadcrumb">
+      <span class="breadcrumb-item">
+        <span class="material-symbols-outlined breadcrumb-icon">devices</span>
+        {{ targetName() }}
+      </span>
+      <span class="material-symbols-outlined breadcrumb-sep">chevron_right</span>
+      <span class="breadcrumb-item breadcrumb-current">Incidents</span>
+    </nav>
   </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">
+      <span class="material-symbols-outlined">warning</span>
+    </div>
+    <h1 class="hero-title">Quel est votre problème ?</h1>
+    <p class="hero-sub">Sélectionnez le type d'incident sur <strong>{{ targetName() }}</strong></p>
+  </div>
 
   <!-- Chargement -->
   @if (loading()) {
-    <div class="loading">
-      <span class="spinner">⏳</span>
-      <p>Chargement des incidents...</p>
+    <div class="state-box">
+      <span class="material-symbols-outlined state-icon spin">sync</span>
+      <p>Chargement des incidents…</p>
     </div>
   }
 
   <!-- Erreur -->
   @if (error()) {
-    <div class="error-box">
-      <span>❌</span>
+    <div class="state-box state-error">
+      <span class="material-symbols-outlined state-icon">error</span>
       <p>{{ error() }}</p>
+      <small>Vérifiez que Strapi est démarré sur localhost:1337</small>
     </div>
   }
 
   <!-- Liste des incidents -->
   @if (!loading() && !error()) {
     @if (incidents().length === 0) {
-      <div class="empty">
+      <div class="state-box">
+        <span class="material-symbols-outlined state-icon">inbox</span>
         <p>Aucun incident disponible pour cet équipement.</p>
-        <button class="back-btn" (click)="goBack()">← Retour</button>
       </div>
     } @else {
       <div class="incidents-list">
         @for (incident of incidents(); track incident.documentId) {
           <button class="incident-card" (click)="selectIncident(incident)">
             <div class="incident-info">
-              <span class="incident-icon">⚠️</span>
-              <div>
+              <div class="card-icon-wrap">
+                <span class="material-symbols-outlined">warning</span>
+              </div>
+              <div class="incident-text">
                 <span class="incident-name">{{ incident.name }}</span>
                 @if (incident.description) {
                   <span class="incident-desc">{{ incident.description }}</span>
                 }
               </div>
             </div>
-            <span class="incident-arrow">→</span>
+            <span class="material-symbols-outlined incident-arrow">east</span>
           </button>
         }
       </div>

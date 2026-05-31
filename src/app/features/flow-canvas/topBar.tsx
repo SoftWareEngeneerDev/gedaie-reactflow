@@ -10,17 +10,14 @@ export interface TreeSummary {
 }
 
 interface Props {
-  // Arbre
-  treeName:    string;
-  documentId:  string;
-  saveStatus:  SaveStatus;
-  savedTrees:  TreeSummary[];
-  // Contexte Target / Incident
+  treeName:               string;
+  documentId:             string;
+  saveStatus:             SaveStatus;
+  savedTrees:             TreeSummary[];
   targets:                StrapiTarget[];
   selectedTargetId:       string;
   incidentTypes:          StrapiIncidentType[];
   selectedIncidentTypeId: string;
-  // Handlers
   onNameChange:           (name: string) => void;
   onSave:                 () => void;
   onPublish:              () => void;
@@ -32,68 +29,27 @@ interface Props {
   onCreateIncidentType:   (name: string) => Promise<void>;
 }
 
-// ── Config des statuts ─────────────────────────────────────────────────────
+// ── Tokens ────────────────────────────────────────────────────────────────
+const C = {
+  primary:             '#004ac6',
+  primaryContainer:    '#2563eb',
+  surface:             '#ffffff',
+  surfaceContainer:    '#e5eeff',
+  surfaceContainerLow: '#eff4ff',
+  onSurface:           '#0b1c30',
+  onSurfaceVariant:    '#434655',
+  outlineVariant:      '#c3c6d7',
+  outline:             '#737686',
+  secondary:           '#006c49',
+};
+
 const STATUS_CONFIG: Record<SaveStatus, { label: string; color: string; bg: string }> = {
   idle:       { label: '',                    color: 'transparent', bg: 'transparent' },
-  saving:     { label: '⏳ Sauvegarde...',    color: '#92400E',     bg: '#FEF3C7' },
-  saved:      { label: '✅ Sauvegardé !',     color: '#15803D',     bg: '#DCFCE7' },
-  error:      { label: '❌ Erreur Strapi',    color: '#991B1B',     bg: '#FEE2E2' },
-  publishing: { label: '⏳ Publication...',   color: '#1E40AF',     bg: '#DBEAFE' },
-  published:  { label: '🚀 Publié !',         color: '#1E40AF',     bg: '#DBEAFE' },
-};
-
-// ── Styles communs ────────────────────────────────────────────────────────
-const selectStyle: React.CSSProperties = {
-  padding:      '5px 8px',
-  border:       '1px solid #E2E8F0',
-  borderRadius: '7px',
-  fontSize:     '12px',
-  color:        '#1E293B',
-  background:   '#FFFFFF',
-  cursor:       'pointer',
-  maxWidth:     '170px',
-  outline:      'none',
-};
-
-const inlineInputStyle: React.CSSProperties = {
-  padding:      '5px 8px',
-  border:       '1px solid #3B82F6',
-  borderRadius: '7px',
-  fontSize:     '12px',
-  color:        '#1E293B',
-  background:   '#EFF6FF',
-  outline:      'none',
-  width:        '150px',
-};
-
-const miniBtn = (bg: string, color: string): React.CSSProperties => ({
-  padding:      '4px 8px',
-  background:   bg,
-  color,
-  border:       'none',
-  borderRadius: '6px',
-  fontSize:     '12px',
-  fontWeight:   700,
-  cursor:       'pointer',
-});
-
-const plusBtn: React.CSSProperties = {
-  padding:      '4px 8px',
-  background:   'transparent',
-  color:        '#3B82F6',
-  border:       '1px dashed #93C5FD',
-  borderRadius: '6px',
-  fontSize:     '12px',
-  fontWeight:   700,
-  cursor:       'pointer',
-  whiteSpace:   'nowrap',
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize:   '11px',
-  fontWeight: 700,
-  color:      '#64748B',
-  whiteSpace: 'nowrap',
+  saving:     { label: '⏳ Sauvegarde...',    color: '#92400E',     bg: '#FEF3C7'     },
+  saved:      { label: '✅ Sauvegardé',       color: '#166534',     bg: '#DCFCE7'     },
+  error:      { label: '❌ Erreur',           color: '#991B1B',     bg: '#FEE2E2'     },
+  publishing: { label: '⏳ Publication...',   color: C.primary,     bg: C.surfaceContainerLow },
+  published:  { label: '🚀 Publié',           color: C.primary,     bg: C.surfaceContainerLow },
 };
 
 // ── Composant ─────────────────────────────────────────────────────────────
@@ -106,347 +62,207 @@ export default function TopBar({
   const status = STATUS_CONFIG[saveStatus];
   const isBusy = saveStatus === 'saving' || saveStatus === 'publishing';
 
-  // ── État local : formulaires inline de création ──────────────────────────
   const [creatingTarget,   setCreatingTarget]   = useState(false);
   const [newTargetName,    setNewTargetName]     = useState('');
   const [targetBusy,       setTargetBusy]       = useState(false);
-
   const [creatingIncident, setCreatingIncident] = useState(false);
   const [newIncidentName,  setNewIncidentName]  = useState('');
   const [incidentBusy,     setIncidentBusy]     = useState(false);
 
-  // Confirmer la création d'un Target
-  const confirmCreateTarget = async () => {
+  const confirmTarget = async () => {
     if (!newTargetName.trim()) return;
     setTargetBusy(true);
-    try {
-      await onCreateTarget(newTargetName.trim());
-      setNewTargetName('');
-      setCreatingTarget(false);
-    } finally {
-      setTargetBusy(false);
-    }
+    try { await onCreateTarget(newTargetName.trim()); setNewTargetName(''); setCreatingTarget(false); }
+    finally { setTargetBusy(false); }
   };
 
-  // Confirmer la création d'un Incident Type
-  const confirmCreateIncident = async () => {
+  const confirmIncident = async () => {
     if (!newIncidentName.trim()) return;
     setIncidentBusy(true);
-    try {
-      await onCreateIncidentType(newIncidentName.trim());
-      setNewIncidentName('');
-      setCreatingIncident(false);
-    } finally {
-      setIncidentBusy(false);
-    }
+    try { await onCreateIncidentType(newIncidentName.trim()); setNewIncidentName(''); setCreatingIncident(false); }
+    finally { setIncidentBusy(false); }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, zIndex: 20 }}>
+    <header style={{
+      height:       '64px',
+      display:      'flex',
+      alignItems:   'center',
+      justifyContent: 'space-between',
+      padding:      '0 40px',
+      background:   C.surface,
+      borderBottom: `1px solid ${C.outlineVariant}`,
+      flexShrink:   0,
+      zIndex:       50,
+      fontFamily:   'Inter, system-ui, sans-serif',
+      gap:          '24px',
+    }}>
 
-      {/* ── Barre de contexte (Cible + Incident) ────────────────────────── */}
-      <div style={{
-        display:      'flex',
-        alignItems:   'center',
-        gap:          '16px',
-        padding:      '6px 20px',
-        background:   '#F1F5F9',
-        borderBottom: '1px solid #E2E8F0',
-        flexWrap:     'wrap',
-      }}>
-
-        {/* Cible */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={labelStyle}>🎯 Cible :</span>
-
-          {!creatingTarget ? (
-            <>
-              <select
-                style={selectStyle}
-                value={selectedTargetId}
-                onChange={(e) => onTargetChange(e.target.value)}
-              >
-                <option value="">— Choisir —</option>
-                {targets.map((t) => (
-                  <option key={t.documentId} value={t.documentId}>{t.name}</option>
-                ))}
-              </select>
-              <button style={plusBtn} onClick={() => setCreatingTarget(true)}>
-                + Nouveau
-              </button>
-            </>
-          ) : (
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <input
-                autoFocus
-                style={inlineInputStyle}
-                value={newTargetName}
-                onChange={(e) => setNewTargetName(e.target.value)}
-                placeholder="Nom de la cible..."
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter')  confirmCreateTarget();
-                  if (e.key === 'Escape') { setCreatingTarget(false); setNewTargetName(''); }
-                }}
-                disabled={targetBusy}
-              />
-              <button
-                style={miniBtn('#22C55E', '#FFFFFF')}
-                onClick={confirmCreateTarget}
-                disabled={targetBusy || !newTargetName.trim()}
-                title="Confirmer (Entrée)"
-              >
-                {targetBusy ? '…' : '✓'}
-              </button>
-              <button
-                style={miniBtn('#E2E8F0', '#64748B')}
-                onClick={() => { setCreatingTarget(false); setNewTargetName(''); }}
-                title="Annuler (Échap)"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Séparateur */}
-        <div style={{ width: '1px', height: '20px', background: '#CBD5E1' }} />
-
-        {/* Incident Type */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={labelStyle}>🔧 Incident :</span>
-
-          {!creatingIncident ? (
-            <>
-              <select
-                style={{
-                  ...selectStyle,
-                  opacity: selectedTargetId ? 1 : 0.5,
-                  cursor:  selectedTargetId ? 'pointer' : 'not-allowed',
-                }}
-                value={selectedIncidentTypeId}
-                onChange={(e) => onIncidentTypeChange(e.target.value)}
-                disabled={!selectedTargetId}
-              >
-                <option value="">
-                  {selectedTargetId ? '— Choisir —' : '← Choisir une cible d\'abord'}
-                </option>
-                {incidentTypes.map((i) => (
-                  <option key={i.documentId} value={i.documentId}>{i.name}</option>
-                ))}
-              </select>
-              <button
-                style={{ ...plusBtn, opacity: selectedTargetId ? 1 : 0.4 }}
-                onClick={() => selectedTargetId && setCreatingIncident(true)}
-                disabled={!selectedTargetId}
-                title={selectedTargetId ? 'Créer un nouveau type d\'incident' : 'Choisissez d\'abord une cible'}
-              >
-                + Nouveau
-              </button>
-            </>
-          ) : (
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <input
-                autoFocus
-                style={inlineInputStyle}
-                value={newIncidentName}
-                onChange={(e) => setNewIncidentName(e.target.value)}
-                placeholder="Type d'incident..."
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter')  confirmCreateIncident();
-                  if (e.key === 'Escape') { setCreatingIncident(false); setNewIncidentName(''); }
-                }}
-                disabled={incidentBusy}
-              />
-              <button
-                style={miniBtn('#22C55E', '#FFFFFF')}
-                onClick={confirmCreateIncident}
-                disabled={incidentBusy || !newIncidentName.trim()}
-                title="Confirmer (Entrée)"
-              >
-                {incidentBusy ? '…' : '✓'}
-              </button>
-              <button
-                style={miniBtn('#E2E8F0', '#64748B')}
-                onClick={() => { setCreatingIncident(false); setNewIncidentName(''); }}
-                title="Annuler (Échap)"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Indicateur de liaison */}
-        {selectedIncidentTypeId && (
-          <span style={{
-            fontSize:     '11px',
-            color:        '#15803D',
-            background:   '#DCFCE7',
-            padding:      '3px 8px',
-            borderRadius: '20px',
-            fontWeight:   600,
-            whiteSpace:   'nowrap',
-          }}>
-            🔗 Lié
-          </span>
-        )}
-      </div>
-
-      {/* ── Barre principale ─────────────────────────────────────────────── */}
-      <header style={{
-        display:      'flex',
-        alignItems:   'center',
-        gap:          '12px',
-        padding:      '10px 20px',
-        background:   '#FFFFFF',
-        borderBottom: '1px solid #E2E8F0',
-        boxShadow:    '0 1px 4px rgba(0,0,0,0.06)',
-      }}>
+      {/* ── Gauche : Logo + Pill ──────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '24px', minWidth: 0 }}>
 
         {/* Logo */}
-        <span style={{ fontSize: '20px', marginRight: '2px' }}>🌳</span>
-        <span style={{ fontWeight: 800, fontSize: '15px', color: '#1E293B', whiteSpace: 'nowrap' }}>
-          FAQ Builder
-        </span>
-
-        <div style={{ width: '1px', height: '24px', background: '#E2E8F0', margin: '0 4px' }} />
-
-        {/* Nom de l'arbre */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, maxWidth: '360px' }}>
-          <label style={{ fontSize: '12px', color: '#94A3B8', whiteSpace: 'nowrap', fontWeight: 600 }}>
-            Nom :
-          </label>
-          <input
-            value={treeName}
-            onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Ex : Résolution imprimante v1"
-            style={{
-              flex:         1,
-              padding:      '6px 10px',
-              border:       '1px solid #E2E8F0',
-              borderRadius: '8px',
-              fontSize:     '13px',
-              color:        '#1E293B',
-              background:   '#F8FAFC',
-              outline:      'none',
-            }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <span className="material-symbols-outlined" style={{ color: C.primary, fontSize: '28px' }}>account_tree</span>
+          <span style={{ fontWeight: 700, fontSize: '15px', color: C.onSurface, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
+            FAQ Builder
+          </span>
         </div>
 
-        {/* Document ID */}
+        {/* Pill contextuel */}
+        <div style={{
+          display:      'flex',
+          alignItems:   'center',
+          gap:          '16px',
+          background:   C.surfaceContainer,
+          border:       `1px solid ${C.outlineVariant}`,
+          borderRadius: '9999px',
+          padding:      '4px 16px',
+          flexShrink:   0,
+        }}>
+
+          {/* Cible */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: C.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>Cible :</span>
+            {!creatingTarget ? (
+              <>
+                <select
+                  value={selectedTargetId}
+                  onChange={e => onTargetChange(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', fontSize: '13px', fontWeight: 600, color: C.onSurface, cursor: 'pointer', outline: 'none', padding: '0 4px', maxWidth: '140px' }}
+                >
+                  <option value="">— Choisir —</option>
+                  {targets.map(t => <option key={t.documentId} value={t.documentId}>{t.name}</option>)}
+                </select>
+                <button
+                  style={{ background: 'none', border: 'none', color: C.primary, fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+                  onClick={() => setCreatingTarget(true)}
+                >+ Nouveau</button>
+              </>
+            ) : (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <input
+                  autoFocus
+                  value={newTargetName}
+                  placeholder="Nom de la cible…"
+                  disabled={targetBusy}
+                  onChange={e => setNewTargetName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') confirmTarget(); if (e.key === 'Escape') { setCreatingTarget(false); setNewTargetName(''); } }}
+                  style={{ width: '130px', padding: '3px 8px', border: `1px solid ${C.primary}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: C.surface, color: C.onSurface, fontFamily: 'inherit' }}
+                />
+                <button onClick={confirmTarget} disabled={targetBusy || !newTargetName.trim()} style={{ background: C.secondary, color: '#fff', border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>{targetBusy ? '…' : '✓'}</button>
+                <button onClick={() => { setCreatingTarget(false); setNewTargetName(''); }} style={{ background: C.outlineVariant, color: C.onSurfaceVariant, border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+              </div>
+            )}
+          </div>
+
+          <div style={{ width: '1px', height: '16px', background: C.outlineVariant }} />
+
+          {/* Incident */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: C.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>Incident :</span>
+            {!creatingIncident ? (
+              <>
+                <select
+                  value={selectedIncidentTypeId}
+                  disabled={!selectedTargetId}
+                  onChange={e => onIncidentTypeChange(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', fontSize: '13px', fontWeight: 600, color: C.onSurface, cursor: selectedTargetId ? 'pointer' : 'not-allowed', outline: 'none', padding: '0 4px', maxWidth: '140px', opacity: selectedTargetId ? 1 : 0.5 }}
+                >
+                  <option value="">{selectedTargetId ? '— Choisir —' : "← Cible d'abord"}</option>
+                  {incidentTypes.map(i => <option key={i.documentId} value={i.documentId}>{i.name}</option>)}
+                </select>
+                <button
+                  disabled={!selectedTargetId}
+                  onClick={() => selectedTargetId && setCreatingIncident(true)}
+                  style={{ background: 'none', border: 'none', color: selectedTargetId ? C.primary : C.outline, fontSize: '12px', fontWeight: 700, cursor: selectedTargetId ? 'pointer' : 'not-allowed', padding: 0, whiteSpace: 'nowrap' }}
+                >+ Nouveau</button>
+              </>
+            ) : (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <input
+                  autoFocus
+                  value={newIncidentName}
+                  placeholder="Type d'incident…"
+                  disabled={incidentBusy}
+                  onChange={e => setNewIncidentName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') confirmIncident(); if (e.key === 'Escape') { setCreatingIncident(false); setNewIncidentName(''); } }}
+                  style={{ width: '140px', padding: '3px 8px', border: `1px solid ${C.primary}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: C.surface, color: C.onSurface, fontFamily: 'inherit' }}
+                />
+                <button onClick={confirmIncident} disabled={incidentBusy || !newIncidentName.trim()} style={{ background: C.secondary, color: '#fff', border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>{incidentBusy ? '…' : '✓'}</button>
+                <button onClick={() => { setCreatingIncident(false); setNewIncidentName(''); }} style={{ background: C.outlineVariant, color: C.onSurfaceVariant, border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+              </div>
+            )}
+          </div>
+
+          {/* Badge Lié */}
+          {selectedIncidentTypeId && (
+            <>
+              <div style={{ width: '1px', height: '16px', background: C.outlineVariant }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 10px', background: 'rgba(0,108,73,0.1)', border: '1px solid rgba(0,108,73,0.2)', borderRadius: '9999px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px', color: C.secondary }}>link</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: C.secondary, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Lié</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Droite : actions ──────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+
+        {/* ID pill */}
         {documentId && (
-          <span style={{
-            fontSize:     '11px',
-            color:        '#94A3B8',
-            background:   '#F1F5F9',
-            padding:      '3px 8px',
-            borderRadius: '6px',
-            fontFamily:   'monospace',
-            whiteSpace:   'nowrap',
-          }}>
-            id: {documentId.slice(0, 8)}…
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: C.surfaceContainerLow, border: `1px solid ${C.outlineVariant}`, borderRadius: '8px' }}>
+            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: C.onSurfaceVariant }}>ID: {documentId.slice(0, 8)}…</span>
+            <span className="material-symbols-outlined" title="Copier l'ID" style={{ fontSize: '14px', color: C.onSurfaceVariant, cursor: 'pointer' }}
+              onClick={() => navigator.clipboard?.writeText(documentId)}>content_copy</span>
+          </div>
         )}
 
         {/* Statut */}
         {saveStatus !== 'idle' && (
-          <span style={{
-            fontSize:     '12px',
-            fontWeight:   600,
-            color:        status.color,
-            background:   status.bg,
-            padding:      '4px 10px',
-            borderRadius: '20px',
-            whiteSpace:   'nowrap',
-          }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: status.color, background: status.bg, padding: '4px 12px', borderRadius: '9999px', whiteSpace: 'nowrap' }}>
             {status.label}
           </span>
         )}
 
-        {/* Charger un arbre */}
-        {savedTrees.length > 0 && (
-          <select
-            style={{
-              padding:      '7px 10px',
-              border:       '1px solid #E2E8F0',
-              borderRadius: '8px',
-              fontSize:     '13px',
-              color:        '#1E293B',
-              background:   '#F8FAFC',
-              cursor:       'pointer',
-              maxWidth:     '200px',
-            }}
-            value=""
-            onChange={(e) => { if (e.target.value) onLoad(e.target.value); }}
-          >
-            <option value="">📂 Charger un arbre...</option>
-            {savedTrees.map((t) => (
-              <option key={t.documentId} value={t.documentId}>{t.name}</option>
-            ))}
-          </select>
-        )}
-
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-
         {/* Vider */}
         <button
-          onClick={() => { if (window.confirm('Vider tout le canvas ? Cette action est irréversible.')) onClear(); }}
+          onClick={() => { if (window.confirm('Vider tout le canvas ?')) onClear(); }}
           disabled={isBusy}
-          style={{
-            padding:      '8px 14px',
-            background:   isBusy ? '#E2E8F0' : '#FEF2F2',
-            color:        isBusy ? '#94A3B8' : '#DC2626',
-            border:       `1px solid ${isBusy ? '#E2E8F0' : '#FECACA'}`,
-            borderRadius: '8px',
-            fontSize:     '13px',
-            fontWeight:   700,
-            cursor:       isBusy ? 'not-allowed' : 'pointer',
-            whiteSpace:   'nowrap',
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'transparent', color: isBusy ? C.outline : C.onSurfaceVariant, border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: isBusy ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', transition: 'background 0.15s' }}
+          onMouseEnter={e => { if (!isBusy) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.05)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
         >
-          🗑️ Vider
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete_sweep</span>
+          Vider
         </button>
 
         {/* Sauvegarder */}
         <button
           onClick={onSave}
           disabled={isBusy || !treeName.trim()}
-          style={{
-            padding:      '8px 16px',
-            background:   isBusy || !treeName.trim() ? '#E2E8F0' : '#3B82F6',
-            color:        isBusy || !treeName.trim() ? '#94A3B8' : '#FFFFFF',
-            border:       'none',
-            borderRadius: '8px',
-            fontSize:     '13px',
-            fontWeight:   700,
-            cursor:       isBusy || !treeName.trim() ? 'not-allowed' : 'pointer',
-            whiteSpace:   'nowrap',
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: C.surface, color: isBusy || !treeName.trim() ? C.outline : C.onSurface, border: `1px solid ${C.outlineVariant}`, borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: isBusy || !treeName.trim() ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', transition: 'background 0.15s' }}
+          onMouseEnter={e => { if (!isBusy && treeName.trim()) (e.currentTarget as HTMLButtonElement).style.background = C.surfaceContainerLow; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = C.surface; }}
         >
-          💾 Sauvegarder
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>save</span>
+          Sauvegarder
         </button>
 
         {/* Publier */}
         <button
           onClick={onPublish}
           disabled={isBusy || !documentId}
-          style={{
-            padding:      '8px 16px',
-            background:   isBusy || !documentId ? '#E2E8F0' : '#8B5CF6',
-            color:        isBusy || !documentId ? '#94A3B8' : '#FFFFFF',
-            border:       'none',
-            borderRadius: '8px',
-            fontSize:     '13px',
-            fontWeight:   700,
-            cursor:       isBusy || !documentId ? 'not-allowed' : 'pointer',
-            whiteSpace:   'nowrap',
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: isBusy || !documentId ? C.outlineVariant : '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: isBusy || !documentId ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', boxShadow: documentId ? '0 4px 12px rgba(37,99,235,0.25)' : 'none', transition: 'background 0.15s' }}
+          onMouseEnter={e => { if (!isBusy && documentId) (e.currentTarget as HTMLButtonElement).style.background = C.primary; }}
+          onMouseLeave={e => { if (!isBusy && documentId) (e.currentTarget as HTMLButtonElement).style.background = '#2563eb'; }}
         >
-          🚀 Publier
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>publish</span>
+          Publier
         </button>
-
-      </header>
-    </div>
+      </div>
+    </header>
   );
 }

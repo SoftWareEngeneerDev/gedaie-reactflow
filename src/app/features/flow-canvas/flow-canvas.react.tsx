@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
   Node,
@@ -137,6 +137,26 @@ const nextId = () => `node_${++nodeCounter}`;
 
 // ── Éditeur principal (doit être enfant de ReactFlowProvider) ─────────────
 function FlowEditor() {
+  // ── Injection polices Google ──────────────────────────────────────────────
+  useEffect(() => {
+    const links = [
+      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap',
+      'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap',
+    ];
+    links.forEach(href => {
+      if (document.querySelector(`link[href="${href}"]`)) return;
+      const link = Object.assign(document.createElement('link'), { rel: 'stylesheet', href });
+      document.head.appendChild(link);
+    });
+    // Règle CSS pour les icônes Material
+    if (!document.getElementById('material-symbols-style')) {
+      const style = document.createElement('style');
+      style.id = 'material-symbols-style';
+      style.textContent = '.material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; font-family: "Material Symbols Outlined"; }';
+      document.head.appendChild(style);
+    }
+  }, []);
+
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const { screenToFlowPosition }         = useReactFlow();
@@ -424,9 +444,14 @@ function FlowEditor() {
       {/* Corps : toolbar + canvas + config panel */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-        <Toolbar />
+        <Toolbar
+          treeName={treeName}
+          savedTrees={savedTrees}
+          onNameChange={setTreeName}
+          onLoad={handleLoad}
+        />
 
-        <div style={{ flex: 1, height: '100%' }}>
+        <div style={{ flex: 1, height: '100%', background: '#f8f9ff' }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -455,7 +480,7 @@ function FlowEditor() {
                 }
               }}
             />
-            <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+            <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e2e8f0" />
           </ReactFlow>
         </div>
 
@@ -466,6 +491,7 @@ function FlowEditor() {
           onDelete={handleDeleteNode}
           onEdgeLabelChange={handleEdgeLabelChange}
           onEdgeDelete={handleEdgeDelete}
+          onClose={() => { setSelectedNode(null); setSelectedEdge(null); }}
         />
       </div>
     </div>

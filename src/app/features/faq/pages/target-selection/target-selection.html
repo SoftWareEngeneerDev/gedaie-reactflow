@@ -1,23 +1,34 @@
 <div class="page">
 
-  <!-- En-tête -->
-  <header class="page-header">
-    <h1 class="page-title">🛠️ FAQ Support</h1>
-    <p class="page-subtitle">Sur quel équipement ou produit avez-vous un problème ?</p>
+  <!-- App bar -->
+  <header class="app-bar">
+    <div class="app-bar-brand">
+      <span class="material-symbols-outlined">account_tree</span>
+      <span class="app-bar-title">FAQ Support</span>
+    </div>
   </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">
+      <span class="material-symbols-outlined">build</span>
+    </div>
+    <h1 class="hero-title">Sur quel équipement<br>avez-vous un problème ?</h1>
+    <p class="hero-sub">Sélectionnez votre équipement pour commencer le diagnostic</p>
+  </div>
 
   <!-- Chargement -->
   @if (loading()) {
-    <div class="loading">
-      <span class="spinner">⏳</span>
-      <p>Chargement des équipements...</p>
+    <div class="state-box">
+      <span class="material-symbols-outlined state-icon spin">sync</span>
+      <p>Chargement des équipements…</p>
     </div>
   }
 
   <!-- Erreur -->
   @if (error()) {
-    <div class="error-box">
-      <span>❌</span>
+    <div class="state-box state-error">
+      <span class="material-symbols-outlined state-icon">error</span>
       <p>{{ error() }}</p>
       <small>Vérifiez que Strapi est démarré sur localhost:1337</small>
     </div>
@@ -26,19 +37,22 @@
   <!-- Grille des targets -->
   @if (!loading() && !error()) {
     @if (targets().length === 0) {
-      <div class="empty">
+      <div class="state-box">
+        <span class="material-symbols-outlined state-icon">inbox</span>
         <p>Aucun équipement disponible pour le moment.</p>
       </div>
     } @else {
       <div class="cards-grid">
         @for (target of targets(); track target.documentId) {
-          <button class="card" (click)="selectTarget(target)">
-            <span class="card-icon">{{ getIcon(target.name) }}</span>
+          <button class="target-card" (click)="selectTarget(target)">
+            <div class="card-icon-wrap">
+              <span class="card-emoji">{{ getIcon(target.name) }}</span>
+            </div>
             <span class="card-name">{{ target.name }}</span>
             @if (target.description) {
               <span class="card-desc">{{ target.description }}</span>
             }
-            <span class="card-arrow">→</span>
+            <span class="material-symbols-outlined card-arrow">east</span>
           </button>
         }
       </div>
