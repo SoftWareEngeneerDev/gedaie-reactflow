@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StrapiTarget, StrapiIncidentType } from './strapiService';
+import ConfirmModal from './ConfirmModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'publishing' | 'published';
@@ -62,6 +63,7 @@ export default function TopBar({
   const status = STATUS_CONFIG[saveStatus];
   const isBusy = saveStatus === 'saving' || saveStatus === 'publishing';
 
+  const [clearModalOpen,   setClearModalOpen]   = useState(false);
   const [creatingTarget,   setCreatingTarget]   = useState(false);
   const [newTargetName,    setNewTargetName]     = useState('');
   const [targetBusy,       setTargetBusy]       = useState(false);
@@ -84,6 +86,7 @@ export default function TopBar({
   };
 
   return (
+    <>
     <header style={{
       height:       '64px',
       display:      'flex',
@@ -229,7 +232,7 @@ export default function TopBar({
 
         {/* Vider */}
         <button
-          onClick={() => { if (window.confirm('Vider tout le canvas ?')) onClear(); }}
+          onClick={() => setClearModalOpen(true)}
           disabled={isBusy}
           style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'transparent', color: isBusy ? C.outline : C.onSurfaceVariant, border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: isBusy ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', transition: 'background 0.15s' }}
           onMouseEnter={e => { if (!isBusy) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.05)'; }}
@@ -264,5 +267,19 @@ export default function TopBar({
         </button>
       </div>
     </header>
+
+    {/* ── Modal de confirmation : Vider le canvas ────────────────────────── */}
+    <ConfirmModal
+      open={clearModalOpen}
+      icon="delete_sweep"
+      variant="danger"
+      title="Vider le canvas ?"
+      message="Tous les nœuds et connexions seront supprimés. Cette action est irréversible."
+      confirmLabel="Tout supprimer"
+      cancelLabel="Annuler"
+      onConfirm={() => { setClearModalOpen(false); onClear(); }}
+      onCancel={() => setClearModalOpen(false)}
+    />
+    </>
   );
 }
