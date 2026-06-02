@@ -12,7 +12,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class StrapiService {
   private readonly http    = inject(HttpClient);
-  private readonly apiUrl  = 'http://localhost:1337/api';
+  private readonly apiUrl  = '/api';
 
   // ── Récupérer tous les Targets ──────────────────────────────────────────
   getTargets(): Observable<Target[]> {

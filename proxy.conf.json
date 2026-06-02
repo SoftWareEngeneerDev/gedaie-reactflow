@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "http://213.32.120.11:1338",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  }
+}

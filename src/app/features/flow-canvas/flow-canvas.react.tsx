@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 import {
   ReactFlow,
   Node,
@@ -505,4 +507,10 @@ export default function FlowCanvasReact() {
       <FlowEditor />
     </ReactFlowProvider>
   );
+}
+
+export function mountFlowCanvas(container: HTMLElement): Root {
+  const root = createRoot(container);
+  root.render(React.createElement(FlowCanvasReact));
+  return root;
 }

@@ -1,7 +1,7 @@
 import { Node, Edge } from '@xyflow/react';
 
 // ── Configuration ─────────────────────────────────────────────────────────
-const STRAPI_URL = 'http://localhost:1337';
+const STRAPI_URL = '';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export interface StrapiTarget {

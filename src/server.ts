@@ -7,6 +7,8 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 
+const STRAPI_BASE = 'http://213.32.120.11:1338';
+
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
@@ -23,6 +25,28 @@ const angularApp = new AngularNodeAppEngine();
  * });
  * ```
  */
+
+/**
+ * Proxy /api/* → Strapi (évite le CORS en production SSR)
+ */
+app.use('/api', express.json(), async (req: express.Request, res: express.Response) => {
+  const target = `${STRAPI_BASE}/api${req.url}`;
+  try {
+    const init: RequestInit = { method: req.method };
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+      init.headers = { 'Content-Type': 'application/json' };
+      init.body = JSON.stringify(req.body);
+    }
+    const strapiRes = await fetch(target, init);
+    const text = await strapiRes.text();
+    res
+      .status(strapiRes.status)
+      .set('Content-Type', strapiRes.headers.get('content-type') ?? 'application/json')
+      .send(text);
+  } catch {
+    res.status(502).json({ error: 'Strapi unreachable' });
+  }
+});
 
 /**
  * Serve static files from /browser
