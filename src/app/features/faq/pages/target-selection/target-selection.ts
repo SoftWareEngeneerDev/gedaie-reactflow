@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StrapiService } from '../../services/strapi.service';
@@ -18,6 +18,16 @@ export class TargetSelectionComponent implements OnInit {
   targets  = signal<Target[]>([]);
   loading  = signal(true);
   error    = signal('');
+  search   = signal('');
+
+  filteredTargets = computed(() => {
+    const q = this.search().toLowerCase().trim();
+    if (!q) return this.targets();
+    return this.targets().filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      (t.description ?? '').toLowerCase().includes(q)
+    );
+  });
 
   // Emojis par défaut selon le nom du target (fallback si pas d'icône Strapi)
   private readonly ICONS: Record<string, string> = {

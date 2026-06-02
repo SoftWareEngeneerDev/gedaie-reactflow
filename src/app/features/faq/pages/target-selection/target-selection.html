@@ -10,11 +10,56 @@
 
   <!-- Hero -->
   <div class="hero">
-    <div class="hero-icon">
-      <span class="material-symbols-outlined">build</span>
+    <h1 class="hero-title">Sur quel équipement avez-vous un problème ?</h1>
+    <p class="hero-sub">Recherchez et sélectionnez votre matériel pour commencer le diagnostic de maintenance.</p>
+  </div>
+
+  <!-- Barre de recherche + Filtres -->
+  <div class="search-section">
+
+    <!-- Barre de recherche -->
+    <div class="search-box">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Rechercher un équipement, modèle ou numéro de série…"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+      @if (search()) {
+        <button class="search-clear" (click)="search.set('')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      }
     </div>
-    <h1 class="hero-title">Sur quel équipement<br>avez-vous un problème ?</h1>
-    <p class="hero-sub">Sélectionnez votre équipement pour commencer le diagnostic</p>
+
+    <!-- Filtres (réservés pour utilisation ultérieure) -->
+    <div class="filters-row">
+      <div class="filter-group">
+        <span class="filter-label">Catégorie</span>
+        <select class="filter-select" disabled>
+          <option>Toutes les catégories</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Statut</span>
+        <select class="filter-select" disabled>
+          <option>Actif</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Département</span>
+        <select class="filter-select" disabled>
+          <option>Tous les départements</option>
+        </select>
+      </div>
+      <button class="advanced-filters-btn" disabled>
+        <span class="material-symbols-outlined">tune</span>
+        Filtres avancés
+      </button>
+    </div>
+
   </div>
 
   <!-- Chargement -->
@@ -41,20 +86,53 @@
         <span class="material-symbols-outlined state-icon">inbox</span>
         <p>Aucun équipement disponible pour le moment.</p>
       </div>
+    } @else if (filteredTargets().length === 0) {
+      <div class="state-box">
+        <span class="material-symbols-outlined state-icon">search_off</span>
+        <p>Aucun équipement ne correspond à « {{ search() }} ».</p>
+        <button class="reset-search-btn" (click)="search.set('')">Réinitialiser la recherche</button>
+      </div>
     } @else {
       <div class="cards-grid">
-        @for (target of targets(); track target.documentId) {
-          <button class="target-card" (click)="selectTarget(target)">
-            <div class="card-icon-wrap">
-              <span class="card-emoji">{{ getIcon(target.name) }}</span>
+        @for (target of filteredTargets(); track target.documentId) {
+          <div class="target-card" (click)="selectTarget(target)" role="button" tabindex="0"
+               (keydown.enter)="selectTarget(target)">
+
+            <!-- Zone image / icône -->
+            <div class="card-image-zone">
+              <div class="card-image-inner">
+                <span class="card-emoji">{{ getIcon(target.name) }}</span>
+              </div>
             </div>
-            <span class="card-name">{{ target.name }}</span>
-            @if (target.description) {
-              <span class="card-desc">{{ target.description }}</span>
-            }
-            <span class="material-symbols-outlined card-arrow">east</span>
-          </button>
+
+            <!-- Contenu -->
+            <div class="card-body">
+              <span class="card-name">{{ target.name }}</span>
+              @if (target.description) {
+                <span class="card-desc">{{ target.description }}</span>
+              }
+            </div>
+
+            <!-- Bouton sélectionner -->
+            <div class="card-footer">
+              <span class="card-select-btn">
+                Sélectionner
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </span>
+            </div>
+
+          </div>
         }
+      </div>
+
+      <!-- Compteur -->
+      <div class="results-count">
+        <span class="material-symbols-outlined">devices</span>
+        Affichage de {{ filteredTargets().length }}
+        @if (filteredTargets().length < targets().length) {
+          sur {{ targets().length }}
+        }
+        équipement{{ filteredTargets().length > 1 ? 's' : '' }}
       </div>
     }
   }
