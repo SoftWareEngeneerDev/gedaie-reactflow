@@ -15,6 +15,7 @@ import {
   Connection,
   ReactFlowProvider,
   useReactFlow,
+  useUpdateNodeInternals,
   NodeMouseHandler,
 } from '@xyflow/react';
 // @ts-ignore -- allow side-effect CSS import without type declarations
@@ -162,6 +163,7 @@ function FlowEditor() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const { screenToFlowPosition }         = useReactFlow();
+  const updateNodeInternals              = useUpdateNodeInternals();
 
   // Nœud ou arête sélectionné(e)
   const [selectedNode, setSelectedNode]  = useState<Node | null>(null);
@@ -234,10 +236,19 @@ function FlowEditor() {
   // pour savoir vers quel nœud naviguer quand l'utilisateur choisit cette option.
   const onConnect = useCallback(
     (connection: Connection) => {
-      const label = connection.sourceHandle ?? undefined;
+      // Résoudre le label à partir de l'index stable du handle (ex. "option-0" → "Oui")
+      let label: string | undefined;
+      if (connection.sourceHandle?.startsWith('option-')) {
+        const idx = parseInt(connection.sourceHandle.replace('option-', ''), 10);
+        const sourceNode = nodes.find((n) => n.id === connection.source);
+        const opts = (sourceNode?.data as { options?: { label: string }[] })?.options;
+        label = opts?.[idx]?.label;
+      } else {
+        label = connection.sourceHandle ?? undefined;
+      }
       setEdges((eds) => addEdge({ ...connection, animated: true, label }, eds));
     },
-    [setEdges],
+    [nodes, setEdges],
   );
 
   // ── Sélection de nœud ────────────────────────────────────────────────────
@@ -278,8 +289,11 @@ function FlowEditor() {
       setSelectedNode((prev) =>
         prev?.id === nodeId ? { ...prev, data: newData } : prev
       );
+      // Recalculer les positions des handles après chaque modification des données
+      // (indispensable quand le nombre d'options change)
+      updateNodeInternals(nodeId);
     },
-    [setNodes],
+    [setNodes, updateNodeInternals],
   );
 
   // ── Suppression d'un nœud ────────────────────────────────────────────────

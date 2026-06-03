@@ -78,7 +78,7 @@ export default function QuestionNode({ data, selected }: NodeProps) {
               key={`src-${i}`}
               type="source"
               position={Position.Bottom}
-              id={opt.label}
+              id={`option-${i}`}
               style={{
                 left:      handleLeft(i, options.length),
                 bottom:    '16px',
