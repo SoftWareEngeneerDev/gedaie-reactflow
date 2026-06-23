@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StrapiTarget, StrapiIncidentType } from './strapiService';
+import { StrapiTarget, StrapiIncidentType, Device, Product, TargetPayload } from './strapiService';
 import ConfirmModal from './ConfirmModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -19,6 +19,8 @@ interface Props {
   selectedTargetId:       string;
   incidentTypes:          StrapiIncidentType[];
   selectedIncidentTypeId: string;
+  devices:                Device[];
+  products:               Product[];
   onNameChange:           (name: string) => void;
   onSave:                 () => void;
   onPublish:              () => void;
@@ -26,7 +28,7 @@ interface Props {
   onClear:                () => void;
   onTargetChange:         (id: string) => void;
   onIncidentTypeChange:   (id: string) => void;
-  onCreateTarget:         (name: string) => Promise<void>;
+  onCreateTarget:         (payload: TargetPayload) => Promise<void>;
   onCreateIncidentType:   (name: string) => Promise<void>;
 }
 
@@ -56,7 +58,7 @@ const STATUS_CONFIG: Record<SaveStatus, { label: string; color: string; bg: stri
 // ── Composant ─────────────────────────────────────────────────────────────
 export default function TopBar({
   treeName, documentId, saveStatus, savedTrees,
-  targets, selectedTargetId, incidentTypes, selectedIncidentTypeId,
+  targets, selectedTargetId, incidentTypes, selectedIncidentTypeId, devices, products,
   onNameChange, onSave, onPublish, onLoad, onClear,
   onTargetChange, onIncidentTypeChange, onCreateTarget, onCreateIncidentType,
 }: Props) {
@@ -65,16 +67,32 @@ export default function TopBar({
 
   const [clearModalOpen,   setClearModalOpen]   = useState(false);
   const [creatingTarget,   setCreatingTarget]   = useState(false);
-  const [newTargetName,    setNewTargetName]     = useState('');
+  const [targetSearch,     setTargetSearch]     = useState('');
   const [targetBusy,       setTargetBusy]       = useState(false);
+  const [targetTab,        setTargetTab]        = useState<'device' | 'product'>('device');
+  const [hoveredItemId,    setHoveredItemId]    = useState<string | null>(null);
   const [creatingIncident, setCreatingIncident] = useState(false);
   const [newIncidentName,  setNewIncidentName]  = useState('');
   const [incidentBusy,     setIncidentBusy]     = useState(false);
 
-  const confirmTarget = async () => {
-    if (!newTargetName.trim()) return;
+  const filteredDevices  = devices.filter(d =>
+    d.name.toLowerCase().includes(targetSearch.toLowerCase())
+  );
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(targetSearch.toLowerCase())
+  );
+
+  const closeCombobox = () => { setCreatingTarget(false); setTargetSearch(''); setTargetTab('device'); };
+
+  const handleSelectItem = async (name: string, externalRef: string, targetType: 'device' | 'product') => {
+    const existing = targets.find(t => t.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      onTargetChange(existing.documentId);
+      closeCombobox();
+      return;
+    }
     setTargetBusy(true);
-    try { await onCreateTarget(newTargetName.trim()); setNewTargetName(''); setCreatingTarget(false); }
+    try { await onCreateTarget({ name, externalRef, targetType }); closeCombobox(); }
     finally { setTargetBusy(false); }
   };
 
@@ -143,18 +161,76 @@ export default function TopBar({
                 >+ Nouveau</button>
               </>
             ) : (
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <input
-                  autoFocus
-                  value={newTargetName}
-                  placeholder="Nom de la cible…"
-                  disabled={targetBusy}
-                  onChange={e => setNewTargetName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') confirmTarget(); if (e.key === 'Escape') { setCreatingTarget(false); setNewTargetName(''); } }}
-                  style={{ width: '130px', padding: '3px 8px', border: `1px solid ${C.primary}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: C.surface, color: C.onSurface, fontFamily: 'inherit' }}
-                />
-                <button onClick={confirmTarget} disabled={targetBusy || !newTargetName.trim()} style={{ background: C.secondary, color: '#fff', border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>{targetBusy ? '…' : '✓'}</button>
-                <button onClick={() => { setCreatingTarget(false); setNewTargetName(''); }} style={{ background: C.outlineVariant, color: C.onSurfaceVariant, border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+              <div style={{ position: 'relative' }}>
+                {/* Ligne : onglets + recherche + fermer */}
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  {/* Onglet Équipement */}
+                  <button
+                    onClick={() => { setTargetTab('device'); setTargetSearch(''); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '3px 7px', fontSize: '11px', fontWeight: 600, border: `1px solid ${targetTab === 'device' ? C.primary : C.outlineVariant}`, borderRadius: '4px', background: targetTab === 'device' ? C.primary : 'transparent', color: targetTab === 'device' ? '#fff' : C.onSurfaceVariant, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>computer</span>
+                    Équipement
+                  </button>
+                  {/* Onglet Produit */}
+                  <button
+                    onClick={() => { setTargetTab('product'); setTargetSearch(''); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '3px 7px', fontSize: '11px', fontWeight: 600, border: `1px solid ${targetTab === 'product' ? C.primary : C.outlineVariant}`, borderRadius: '4px', background: targetTab === 'product' ? C.primary : 'transparent', color: targetTab === 'product' ? '#fff' : C.onSurfaceVariant, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>inventory_2</span>
+                    Produit
+                  </button>
+                  <button onClick={closeCombobox} style={{ background: C.outlineVariant, color: C.onSurfaceVariant, border: 'none', borderRadius: '4px', padding: '3px 7px', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+                </div>
+
+                {/* Champ de recherche */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px', color: C.onSurfaceVariant }}>search</span>
+                  <input
+                    autoFocus
+                    value={targetSearch}
+                    placeholder={targetTab === 'device' ? 'Rechercher un équipement…' : 'Rechercher un produit…'}
+                    disabled={targetBusy}
+                    onChange={e => setTargetSearch(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Escape') closeCombobox(); }}
+                    style={{ width: '170px', padding: '3px 8px', border: `1px solid ${C.primary}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: C.surface, color: C.onSurface, fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                {/* Liste déroulante */}
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200, background: C.surface, border: `1px solid ${C.outlineVariant}`, borderRadius: '8px', maxHeight: '220px', overflowY: 'auto', width: '230px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                  {targetBusy ? (
+                    <div style={{ padding: '10px 12px', fontSize: '12px', color: C.onSurfaceVariant, textAlign: 'center' }}>Création en cours…</div>
+                  ) : targetTab === 'device' ? (
+                    filteredDevices.length === 0
+                      ? <div style={{ padding: '10px 12px', fontSize: '12px', color: C.onSurfaceVariant, fontStyle: 'italic' }}>Aucun équipement trouvé</div>
+                      : filteredDevices.map(d => (
+                          <div
+                            key={d.id}
+                            onClick={() => handleSelectItem(d.name, String(d.id), 'device')}
+                            onMouseEnter={() => setHoveredItemId(String(d.id))}
+                            onMouseLeave={() => setHoveredItemId(null)}
+                            style={{ padding: '8px 12px', fontSize: '13px', cursor: 'pointer', color: C.onSurface, background: hoveredItemId === String(d.id) ? C.surfaceContainerLow : 'transparent', transition: 'background 0.1s' }}
+                          >
+                            {d.name}
+                          </div>
+                        ))
+                  ) : (
+                    filteredProducts.length === 0
+                      ? <div style={{ padding: '10px 12px', fontSize: '12px', color: C.onSurfaceVariant, fontStyle: 'italic' }}>Aucun produit trouvé</div>
+                      : filteredProducts.map(p => (
+                          <div
+                            key={p.value}
+                            onClick={() => handleSelectItem(p.name, p.value, 'product')}
+                            onMouseEnter={() => setHoveredItemId(p.value)}
+                            onMouseLeave={() => setHoveredItemId(null)}
+                            style={{ padding: '8px 12px', fontSize: '13px', cursor: 'pointer', color: C.onSurface, background: hoveredItemId === p.value ? C.surfaceContainerLow : 'transparent', transition: 'background 0.1s' }}
+                          >
+                            {p.name}
+                          </div>
+                        ))
+                  )}
+                </div>
               </div>
             )}
           </div>

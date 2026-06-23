@@ -5,8 +5,16 @@ const STRAPI_URL = '';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export interface StrapiTarget {
-  documentId: string;
-  name:       string;
+  documentId:   string;
+  name:         string;
+  externalRef?: string;
+  targetType?:  'device' | 'product';
+}
+
+export interface TargetPayload {
+  name:        string;
+  externalRef: string;
+  targetType:  'device' | 'product';
 }
 
 export interface StrapiIncidentType {
@@ -29,6 +37,16 @@ export interface SaveTreePayload {
   incidentTypeId?: string;   // lie l'arbre à un type d'incident au moment du save
 }
 
+export interface Device {
+  id:   number;
+  name: string;
+}
+
+export interface Product {
+  value: string;
+  name:  string;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -38,6 +56,18 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new Error(msg);
   }
   return res.json() as Promise<T>;
+}
+
+// ── API : Équipements externes (Larco) ────────────────────────────────────
+
+export async function getDevicesAndProducts(): Promise<{ devices: Device[]; products: Product[] }> {
+  const res = await fetch('/larco-api/larco-geadaie/api/v1/devices-products-lite');
+  if (!res.ok) throw new Error(`Erreur chargement équipements: ${res.status}`);
+  const json = await res.json() as {
+    returnStatus: string;
+    data: { devices: Device[]; products: Product[] };
+  };
+  return { devices: json.data.devices, products: json.data.products };
 }
 
 // ── API : Targets ─────────────────────────────────────────────────────────
@@ -50,11 +80,11 @@ export async function listTargets(): Promise<StrapiTarget[]> {
   return json.data;
 }
 
-export async function createTarget(name: string): Promise<StrapiTarget> {
+export async function createTarget(payload: TargetPayload): Promise<StrapiTarget> {
   const res = await fetch(`${STRAPI_URL}/api/targets`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ data: { name } }),
+    body:    JSON.stringify({ data: payload }),
   });
   const json = await handleResponse<{ data: StrapiTarget }>(res);
   return json.data;
@@ -206,13 +236,28 @@ export async function loadTree(documentId: string): Promise<{
     data:     n.content ?? { label: n.label ?? '' },
   }));
 
-  const edges: Edge[] = edgesJson.data.map((e) => ({
-    id:       e.edgeId,
-    source:   e.source,
-    target:   e.target,
-    label:    e.label ?? '',
-    animated: true,
-  }));
+  const edges: Edge[] = edgesJson.data.map((e) => {
+    // Reconstruire sourceHandle : chercher l'index de l'option dont le label
+    // correspond au label de l'arête dans le nœud source (QuestionNode).
+    // Sans ça, ReactFlow connecte toutes les arêtes au handle par défaut.
+    let sourceHandle: string | undefined;
+    const sourceNode = nodes.find((n) => n.id === e.source);
+    if (sourceNode?.type === 'question') {
+      const opts = (sourceNode.data as { options?: { label: string }[] })?.options;
+      if (opts) {
+        const idx = opts.findIndex((o) => o.label === e.label);
+        if (idx >= 0) sourceHandle = `option-${idx}`;
+      }
+    }
+    return {
+      id:       e.edgeId,
+      source:   e.source,
+      target:   e.target,
+      label:    e.label ?? '',
+      animated: true,
+      ...(sourceHandle !== undefined ? { sourceHandle } : {}),
+    };
+  });
 
   console.log(`[loadTree] ${documentId} → ${nodes.length} nœuds, ${edges.length} arêtes`);
 

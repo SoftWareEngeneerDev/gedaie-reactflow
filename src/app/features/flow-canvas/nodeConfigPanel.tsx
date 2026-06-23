@@ -4,7 +4,7 @@ import { Node, Edge } from '@xyflow/react';
 // ── Interfaces ────────────────────────────────────────────────────────────
 interface QuestionData { question?: string; options?: { label: string; nextNodeId?: string }[]; }
 interface SolutionData { title?: string; message?: string; steps?: string[]; }
-interface TicketData   { message?: string; priority?: 'low' | 'medium' | 'high'; category?: string; }
+interface TicketData   { message?: string; priority?: 'Eleve' | 'ASAP' | 'Normal' | 'Faible'; category?: 'ASSISTANCE' | 'MAINTENANCE' | 'CORRECTION' | 'DEPLOIEMENT' | 'ACHEMINEMENT'; }
 interface EndData      { message?: string; }
 
 interface Props {
@@ -186,15 +186,23 @@ function TicketForm({ data, onChange }: { data: TicketData; onChange: (d: Ticket
           </div>
           <div>
             <FieldLabel>PRIORITÉ</FieldLabel>
-            <select style={{ ...inputS, cursor: 'pointer' }} value={data.priority ?? 'medium'} onChange={e => onChange({ ...data, priority: e.target.value as TicketData['priority'] })}>
-              <option value="low">🟡 Basse (Low)</option>
-              <option value="medium">🟠 Moyenne (Medium)</option>
-              <option value="high">🔴 Haute (High)</option>
+            <select style={{ ...inputS, cursor: 'pointer' }} value={data.priority ?? 'Normal'} onChange={e => onChange({ ...data, priority: e.target.value as TicketData['priority'] })}>
+              <option value="Eleve">🔴 Elevé</option>
+              <option value="ASAP">🟠 ASAP</option>
+              <option value="Normal">🟡 Normal</option>
+              <option value="Faible">⚪ Faible</option>
             </select>
           </div>
           <div>
             <FieldLabel>CATÉGORIE</FieldLabel>
-            <input style={inputS} value={data.category ?? ''} placeholder="Ex : hardware, software..." onChange={e => onChange({ ...data, category: e.target.value })} />
+            <select style={{ ...inputS, cursor: 'pointer' }} value={data.category ?? ''} onChange={e => onChange({ ...data, category: e.target.value as TicketData['category'] })}>
+              <option value="" disabled>Sélectionner une catégorie…</option>
+              <option value="ASSISTANCE">Assistance</option>
+              <option value="MAINTENANCE">Maintenance</option>
+              <option value="CORRECTION">Correction</option>
+              <option value="DEPLOIEMENT">Déploiement</option>
+              <option value="ACHEMINEMENT">Acheminement</option>
+            </select>
           </div>
         </div>
       </section>

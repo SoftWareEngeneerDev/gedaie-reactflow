@@ -3,22 +3,31 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 
 interface TicketData {
   message?:  string;
-  priority?: 'low' | 'medium' | 'high';
-  category?: string;
+  priority?: 'Eleve' | 'ASAP' | 'Normal' | 'Faible';
+  category?: 'ASSISTANCE' | 'MAINTENANCE' | 'CORRECTION' | 'DEPLOIEMENT' | 'ACHEMINEMENT';
 }
+
+const CATEGORY_LABEL: Record<string, string> = {
+  ASSISTANCE:   'Assistance',
+  MAINTENANCE:  'Maintenance',
+  CORRECTION:   'Correction',
+  DEPLOIEMENT:  'Déploiement',
+  ACHEMINEMENT: 'Acheminement',
+};
 
 const COLOR = '#784b00';
 
 const PRIORITY: Record<string, { label: string; color: string; bg: string }> = {
-  low:    { label: 'Basse',   color: '#5f6002', bg: '#f5f6da' },
-  medium: { label: 'Moyenne', color: '#784b00', bg: '#fdf0e0' },
-  high:   { label: 'Haute',   color: '#ba1a1a', bg: '#ffdad6' },
+  Eleve:  { label: 'Elevé',  color: '#ba1a1a', bg: '#ffdad6' },
+  ASAP:   { label: 'ASAP',   color: '#784b00', bg: '#fdf0e0' },
+  Normal: { label: 'Normal', color: '#5f6002', bg: '#f5f6da' },
+  Faible: { label: 'Faible', color: '#434655', bg: '#f0f1f5' },
 };
 
 export default function TicketNode({ data, selected }: NodeProps) {
   const d        = data as TicketData;
-  const priority = d.priority ?? 'medium';
-  const p        = PRIORITY[priority] ?? PRIORITY['medium'];
+  const priority = d.priority ?? 'Normal';
+  const p        = PRIORITY[priority] ?? PRIORITY['Normal'];
 
   return (
     <div style={{ position: 'relative', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -63,7 +72,7 @@ export default function TicketNode({ data, selected }: NodeProps) {
             </span>
             {d.category && (
               <span style={{ padding: '3px 10px', background: '#eff4ff', border: '1px solid rgba(195,198,215,0.4)', borderRadius: '8px', fontSize: '10px', color: '#434655', fontWeight: 500 }}>
-                {d.category}
+                {CATEGORY_LABEL[d.category] ?? d.category}
               </span>
             )}
           </div>

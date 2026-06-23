@@ -1,8 +1,15 @@
 {
   "/api": {
-    "target": "http://213.32.120.11:1338",
+    "target": "http://localhost:1337",
     "secure": false,
     "changeOrigin": true,
+    "logLevel": "info"
+  },
+  "/larco-api": {
+    "target": "https://api-geadaie.larco.sertia.kerub.fr",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": { "^/larco-api": "" },
     "logLevel": "info"
   }
 }

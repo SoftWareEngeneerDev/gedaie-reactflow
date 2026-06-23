@@ -31,7 +31,8 @@ import TopBar, { SaveStatus, TreeSummary } from './topBar';
 import {
   createTree, saveTree, publishTree, loadTree, listTrees,
   listTargets, listIncidentTypes, createTarget, createIncidentType,
-  StrapiTarget, StrapiIncidentType,
+  getDevicesAndProducts,
+  StrapiTarget, StrapiIncidentType, Device, Product, TargetPayload,
 } from './strapiService';
 
 // ── Types de nœuds enregistrés ────────────────────────────────────────────
@@ -62,77 +63,8 @@ const DEFAULT_DATA: Record<string, Record<string, unknown>> = {
   },
 };
 
-// ── Nœuds et connexions de démonstration ─────────────────────────────────
-const initialNodes: Node[] = [
-  {
-    id: 'node_1',
-    type: 'question',
-    position: { x: 300, y: 50 },
-    data: {
-      question: 'Votre imprimante est-elle sous tension ?',
-      options: [
-        { label: 'Oui', nextNodeId: 'node_2' },
-        { label: 'Non', nextNodeId: 'node_3' },
-      ],
-    },
-  },
-  {
-    id: 'node_2',
-    type: 'question',
-    position: { x: 100, y: 280 },
-    data: {
-      question: 'Y a-t-il un bourrage papier ?',
-      options: [
-        { label: 'Oui', nextNodeId: 'node_4' },
-        { label: 'Non', nextNodeId: 'node_5' },
-      ],
-    },
-  },
-  {
-    id: 'node_3',
-    type: 'solution',
-    position: { x: 520, y: 280 },
-    data: {
-      title:   "Allumer l'imprimante",
-      message: "Appuyez sur le bouton d'alimentation et attendez 30 secondes.",
-    },
-  },
-  {
-    id: 'node_4',
-    type: 'solution',
-    position: { x: 0, y: 510 },
-    data: {
-      title:   'Retirer le bourrage',
-      message: 'Ouvrez le capot et retirez délicatement la feuille coincée.',
-    },
-  },
-  {
-    id: 'node_5',
-    type: 'ticket',
-    position: { x: 300, y: 510 },
-    data: {
-      message:  'Le problème persiste — intervention nécessaire.',
-      priority: 'high',
-      category: 'hardware',
-    },
-  },
-  {
-    id: 'node_6',
-    type: 'end',
-    position: { x: 300, y: 740 },
-    data: { message: "Merci d'avoir utilisé la FAQ ! 🎉" },
-  },
-];
-
-const initialEdges: Edge[] = [
-  { id: 'e1-2', source: 'node_1', target: 'node_2', label: 'Oui', animated: true },
-  { id: 'e1-3', source: 'node_1', target: 'node_3', label: 'Non', animated: true },
-  { id: 'e2-4', source: 'node_2', target: 'node_4', label: 'Oui', animated: true },
-  { id: 'e2-5', source: 'node_2', target: 'node_5', label: 'Non', animated: true },
-  { id: 'e3-6', source: 'node_3', target: 'node_6', animated: true },
-  { id: 'e4-6', source: 'node_4', target: 'node_6', animated: true },
-  { id: 'e5-6', source: 'node_5', target: 'node_6', animated: true },
-];
+const initialNodes: Node[] = [];
+const initialEdges: Edge[] = [];
 
 // ── Compteur d'IDs pour les nouveaux nœuds ────────────────────────────────
 let nodeCounter = 10;
@@ -181,6 +113,8 @@ function FlowEditor() {
   const [selectedTargetId,       setSelectedTargetId]       = useState('');
   const [incidentTypes,          setIncidentTypes]          = useState<StrapiIncidentType[]>([]);
   const [selectedIncidentTypeId, setSelectedIncidentTypeId] = useState('');
+  const [devices,                setDevices]                = useState<Device[]>([]);
+  const [products,               setProducts]               = useState<Product[]>([]);
 
   // ── Chargement initial ───────────────────────────────────────────────────
   const refreshTrees = useCallback(() => {
@@ -196,6 +130,9 @@ function FlowEditor() {
   React.useEffect(() => {
     refreshTrees();
     refreshTargets();
+    getDevicesAndProducts()
+      .then(({ devices: d, products: p }) => { setDevices(d); setProducts(p); })
+      .catch(() => {});
   }, [refreshTrees, refreshTargets]);
 
   // ── Handlers Target / Incident ───────────────────────────────────────────
@@ -213,10 +150,9 @@ function FlowEditor() {
     setSelectedIncidentTypeId(incidentId);
   }, []);
 
-  const handleCreateTarget = useCallback(async (name: string) => {
-    const target = await createTarget(name);
+  const handleCreateTarget = useCallback(async (payload: TargetPayload) => {
+    const target = await createTarget(payload);
     setTargets((prev) => [...prev, target]);
-    // Sélectionner automatiquement le nouveau target
     setSelectedTargetId(target.documentId);
     setSelectedIncidentTypeId('');
     setIncidentTypes([]);
@@ -446,6 +382,8 @@ function FlowEditor() {
         selectedTargetId={selectedTargetId}
         incidentTypes={incidentTypes}
         selectedIncidentTypeId={selectedIncidentTypeId}
+        devices={devices}
+        products={products}
         onNameChange={setTreeName}
         onSave={handleSave}
         onPublish={handlePublish}
