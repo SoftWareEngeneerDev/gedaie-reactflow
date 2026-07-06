@@ -1,7 +1,9 @@
 import { Node, Edge } from '@xyflow/react';
+import { environment } from '../../../environments/environment';
 
 // ── Configuration ─────────────────────────────────────────────────────────
-const STRAPI_URL = '';
+const STRAPI_URL    = environment.strapiUrl;
+const LARCO_API_BASE = environment.larcoApiBase;
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export interface StrapiTarget {
@@ -61,7 +63,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 // ── API : Équipements externes (Larco) ────────────────────────────────────
 
 export async function getDevicesAndProducts(): Promise<{ devices: Device[]; products: Product[] }> {
-  const res = await fetch('/larco-api/larco-geadaie/api/v1/devices-products-lite');
+  const res = await fetch(`${LARCO_API_BASE}/larco-geadaie/api/v1/devices-products-lite`);
   if (!res.ok) throw new Error(`Erreur chargement équipements: ${res.status}`);
   const json = await res.json() as {
     returnStatus: string;

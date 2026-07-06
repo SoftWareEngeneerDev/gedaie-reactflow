@@ -8,6 +8,7 @@ import express from 'express';
 import { join } from 'node:path';
 
 const STRAPI_BASE = 'http://213.32.120.11:1338';
+const LARCO_BASE  = 'https://api-geadaie.larco.sertia.kerub.fr';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -45,6 +46,23 @@ app.use('/api', express.json(), async (req: express.Request, res: express.Respon
       .send(text);
   } catch {
     res.status(502).json({ error: 'Strapi unreachable' });
+  }
+});
+
+/**
+ * Proxy /larco-api/* → API Larco (évite le CORS en production SSR)
+ */
+app.use('/larco-api', async (req: express.Request, res: express.Response) => {
+  const target = `${LARCO_BASE}${req.url}`;
+  try {
+    const larcoRes = await fetch(target, { method: req.method });
+    const text = await larcoRes.text();
+    res
+      .status(larcoRes.status)
+      .set('Content-Type', larcoRes.headers.get('content-type') ?? 'application/json')
+      .send(text);
+  } catch {
+    res.status(502).json({ error: 'Larco API unreachable' });
   }
 });
 
