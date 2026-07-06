@@ -18,8 +18,7 @@ import {
   useUpdateNodeInternals,
   NodeMouseHandler,
 } from '@xyflow/react';
-// @ts-ignore -- allow side-effect CSS import without type declarations
-import '@xyflow/react/dist/style.css';
+// Le CSS de @xyflow/react est chargé globalement via angular.json ("styles")
 
 import QuestionNode from './nodes/questionNode';
 import SolutionNode from './nodes/solutionNode';
