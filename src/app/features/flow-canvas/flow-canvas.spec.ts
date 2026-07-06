@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FlowCanvas } from './flow-canvas';
+import { FlowCanvasComponent } from './flow-canvas';
 
-describe('FlowCanvas', () => {
-  let component: FlowCanvas;
-  let fixture: ComponentFixture<FlowCanvas>;
+describe('FlowCanvasComponent', () => {
+  let component: FlowCanvasComponent;
+  let fixture: ComponentFixture<FlowCanvasComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FlowCanvas],
+      imports: [FlowCanvasComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(FlowCanvas);
+    fixture = TestBed.createComponent(FlowCanvasComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
